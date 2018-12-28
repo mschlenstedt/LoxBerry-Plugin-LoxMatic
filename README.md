@@ -1,2 +1,2 @@
-# LoxBerry-Plugin-Lox-O-Matic
+# LoxBerry-Plugin-LoxMatic
 A LoxBerry Plugin.
