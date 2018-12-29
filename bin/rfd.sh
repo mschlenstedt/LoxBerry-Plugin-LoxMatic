@@ -15,6 +15,8 @@ fi
 echo out > /sys/class/gpio/gpio18/direction
 
 # Start rfd
-killall rfd
-sleep 1
+if pgrep rfd > /dev/null 2>&1 ; then
+	killall rfd
+	sleep 1
+fi
 $HM_HOME/bin/rfd -l 0 -f REPLACELBPCONFIGDIR/rfd.conf > /dev/null 2>&1 &
