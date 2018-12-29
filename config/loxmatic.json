@@ -1,3 +1,5 @@
 {
-   "EnableRFD" : true
+   "EnableRFD" : "true",
+   "EnableHM2MQTT" : "true",
+   "Debug" : "true"
 }

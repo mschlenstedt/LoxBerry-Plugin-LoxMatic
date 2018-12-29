@@ -19,6 +19,7 @@ if pgrep rfd > /dev/null 2>&1 ; then
 	killall rfd
 	sleep 1
 fi
+
 # Create a new entry for the logfile (for logmanager)
 . $LBHOMEDIR/libs/bashlib/loxberry_log.sh
 PACKAGE=loxmatic
@@ -28,4 +29,13 @@ APPEND=1
 LOGSTART
 LOGOK "RFD daemon started."
 LOGEND
-$HM_HOME/bin/rfd -l 0 -f REPLACELBPCONFIGDIR/rfd.conf > /dev/null 2>&1 &
+
+# Loglevel
+DEBUG=$(jq '.Debug' REPLACELBPCONFIGDIR/loxmatic.json)
+if [ "$DEBUG" = "true" ] || [ "$DEBUG" = "1" ]; then
+	LEVEL="0"
+else
+	LEVEL="2"
+fi
+
+$HM_HOME/bin/rfd -d -l $LEVEL -f REPLACELBPCONFIGDIR/rfd.conf > /dev/null 2>&1
