@@ -1,0 +1,12 @@
+#!/bin/sh
+export HM_HOME=REPLACELBPDATADIR/occu/arm-gnueabihf/packages-eQ-3/RFD
+export LD_LIBRARY_PATH=$HM_HOME/lib
+
+# GPIO18 is needed for resetting
+if [ !-e /sys/class/gpiogpio18 ]; then
+	echo 18 > /sys/class/gpio/export
+fi
+echo out > /sys/class/gpio/gpio18/direction
+
+# Start rfd
+$HM_HOME/bin/rfd -l 0 -f REPLACELBPCONFIGDIR/rfd.conf &
