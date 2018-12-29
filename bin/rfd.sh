@@ -14,7 +14,7 @@ if [ ! -e /sys/class/gpio/gpio18 ]; then
 fi
 echo out > /sys/class/gpio/gpio18/direction
 
-# Lill existing RFD
+# Kill existing RFD
 if pgrep -x rfd > /dev/null 2>&1 ; then
 	killall rfd
 	sleep 1
@@ -24,7 +24,7 @@ fi
 . $LBHOMEDIR/libs/bashlib/loxberry_log.sh
 PACKAGE=loxmatic
 NAME=rfd
-FILENAME=${LBPLOG}/REPLACELBPPLUGINDIR/rfd.log
+FILENAME=REPLACELBPLOGDIR/rfd.log
 APPEND=1
 LOGSTART "RFD daemon started."
 LOGOK "RFD daemon started."

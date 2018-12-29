@@ -24,6 +24,5 @@ echo "<INFO> Installing HM2MQTT.js..."
 cd $PDATA
 tar xvfz hm2mqtt.tar.gz
 rm hm2mqtt.tar.gz
-ln -sv $PDATA/hm2mqtt/index.js $PBIN/hm2mqtt
 
 exit 0
