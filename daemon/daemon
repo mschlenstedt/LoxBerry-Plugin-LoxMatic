@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Should RFD be started
-RFDENABLED=$(jq '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)
+RFDENABLED=$(jq -r '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)
 
 if [ "$RFDENABLED" = "true" ] || [ "$RFDENABLED" = "1" ]; then
 	REPLACELBPBINDIR/rfd.sh > /dev/null 2>&1

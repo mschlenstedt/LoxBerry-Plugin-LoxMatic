@@ -14,8 +14,8 @@ if [ ! -e /sys/class/gpio/gpio18 ]; then
 fi
 echo out > /sys/class/gpio/gpio18/direction
 
-# Start rfd
-if pgrep rfd > /dev/null 2>&1 ; then
+# Lill existing RFD
+if pgrep -x rfd > /dev/null 2>&1 ; then
 	killall rfd
 	sleep 1
 fi
@@ -26,16 +26,17 @@ PACKAGE=loxmatic
 NAME=rfd
 FILENAME=${LBPLOG}/REPLACELBPPLUGINDIR/rfd.log
 APPEND=1
-LOGSTART
+LOGSTART "RFD daemon started."
 LOGOK "RFD daemon started."
 LOGEND
 
 # Loglevel
-DEBUG=$(jq '.Debug' REPLACELBPCONFIGDIR/loxmatic.json)
+DEBUG=$(jq -r '.Debug' REPLACELBPCONFIGDIR/loxmatic.json)
 if [ "$DEBUG" = "true" ] || [ "$DEBUG" = "1" ]; then
 	LEVEL="0"
 else
 	LEVEL="2"
 fi
 
+# Start RFD
 $HM_HOME/bin/rfd -d -l $LEVEL -f REPLACELBPCONFIGDIR/rfd.conf > /dev/null 2>&1
