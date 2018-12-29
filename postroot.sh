@@ -27,6 +27,7 @@ killall rfd
 
 echo "<INFO> Preparing OCCU..."
 mkdir -v /etc/config
+rm -rv /etc/config/firmware
 ln -sv $PDATA/occu/firmware /etc/config/firmware
 rm -rv /var/status
 ln -sv /tmp /var/status
