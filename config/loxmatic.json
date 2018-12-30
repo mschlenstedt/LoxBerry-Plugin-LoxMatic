@@ -1,5 +1,7 @@
 {
    "EnableRFD" : "true",
    "EnableHM2MQTT" : "true",
-   "Debug" : "true"
+   "Debug" : "true",
+   "Broker" : "127.0.0.1",
+   "Names" : ""
 }
