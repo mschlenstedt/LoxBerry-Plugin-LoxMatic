@@ -10,5 +10,5 @@ fi
 HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' REPLACELBPCONFIGDIR/loxmatic.json)
 
 if [ "$HM2MQTTENABLED" = "true" ] || [ "$HM2MQTTENABLED" = "1" ]; then
-	REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1
+	sudo -n -u loxberry REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1
 fi
