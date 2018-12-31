@@ -1,11 +1,10 @@
 #!/bin/bash
 
-if [ "$UID" -ne 0 ]; then
-	echo "This script has to be run as root."
-	exit
-fi
+#if [ "$UID" -ne 0 ]; then
+#	echo "This script has to be run as root."
+#	exit
+#fi
 
-# Kill existing HM2MQTT
 # Kill existing HM2MQTT
 if pgrep -f loxmatic/hm2mqtt/index.js > /dev/null 2>&1 ; then
         pkill -f loxmatic/hm2mqtt/index.js
@@ -33,13 +32,20 @@ else
 fi
 
 # MQTT Parameters
-BROKER=$(jq -r '.Broker' REPLACELBPCONFIGDIR/loxmatic.json)
-NAMES=$(jq -r '.Names' REPLACELBPCONFIGDIR/loxmatic.json)
-if [ -e $NAMES ] && [[ $NAMES != "" ]]; then
-	$JSONNAME="-j $NAMES"
+BROKER=$(jq -r '.BrokerAddress' REPLACELBPCONFIGDIR/loxmatic.json)
+USERNAME=$(jq -r '.BrokerUsername' REPLACELBPCONFIGDIR/loxmatic.json)
+PASSWORD=$(jq -r '.BrokerPassword' REPLACELBPCONFIGDIR/loxmatic.json)
+if [[ $USERNAME != "" ]]; then
+        CREDS="$USERNAME@$PASSWORD"
 else
-	$JSONNAME=""
+        CREDS=""
+fi
+NAMES=$(jq -r '.NamesFile' REPLACELBPCONFIGDIR/loxmatic.json)
+if [ -e $NAMES ]; then
+	JSONNAME="-j $NAMES"
+else
+	JSONNAME=""
 fi
 
 # Start HM2MQTT
-REPLACELBPDATADIR/hm2mqtt/index.js -d -m mqtt://$BROKER -a 127.0.0.1 -v $LEVEL $JSONNAME >> REPLACELBPLOGDIR/hm2mqtt.log 2>&1 &
+REPLACELBPDATADIR/hm2mqtt/index.js -d -m mqtt://$CREDS$BROKER -a 127.0.0.1 -v $LEVEL $JSONNAME >> REPLACELBPLOGDIR/hm2mqtt.log 2>&1 &

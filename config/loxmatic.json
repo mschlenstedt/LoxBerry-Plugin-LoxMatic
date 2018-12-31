@@ -2,6 +2,8 @@
    "EnableRFD" : "true",
    "EnableHM2MQTT" : "true",
    "Debug" : "true",
-   "Broker" : "127.0.0.1",
-   "Names" : ""
+   "BrokerAddress" : "127.0.0.1",
+   "BrokerUsername" : "loxberry",
+   "BrokerPassword" : "loxberry",
+   "NamesFile" : ""
 }
