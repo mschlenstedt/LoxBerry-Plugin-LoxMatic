@@ -7,8 +7,11 @@ if [ "$RFDENABLED" = "true" ] || [ "$RFDENABLED" = "1" ]; then
 	REPLACELBPBINDIR/rfd.sh > /dev/null 2>&1
 fi
 
+# Should HM2MQTT be started
 HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' REPLACELBPCONFIGDIR/loxmatic.json)
 
 if [ "$HM2MQTTENABLED" = "true" ] || [ "$HM2MQTTENABLED" = "1" ]; then
 	sudo -n -u loxberry REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1
 fi
+
+chown -R loxberry:loxberry REPLACELBPCONFIGDIR

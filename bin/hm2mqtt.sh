@@ -6,10 +6,10 @@
 #fi
 
 # Kill existing HM2MQTT
-if pgrep -f loxmatic/hm2mqtt/index.js > /dev/null 2>&1 ; then
-        pkill -f loxmatic/hm2mqtt/index.js
+if pgrep -f REPLACELBPPLUGINDIR/hm2mqtt/index.js > /dev/null 2>&1 ; then
+        pkill -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
         sleep 1
-        pkill -9 -f loxmatic/hm2mqtt/index.js
+        pkill -9 -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
 
 fi
 
@@ -36,12 +36,12 @@ BROKER=$(jq -r '.BrokerAddress' REPLACELBPCONFIGDIR/loxmatic.json)
 USERNAME=$(jq -r '.BrokerUsername' REPLACELBPCONFIGDIR/loxmatic.json)
 PASSWORD=$(jq -r '.BrokerPassword' REPLACELBPCONFIGDIR/loxmatic.json)
 if [[ $USERNAME != "" ]]; then
-        CREDS="$USERNAME@$PASSWORD"
+        CREDS="$USERNAME:$PASSWORD@"
 else
         CREDS=""
 fi
 NAMES=$(jq -r '.NamesFile' REPLACELBPCONFIGDIR/loxmatic.json)
-if [ -e $NAMES ]; then
+if [ -f $NAMES ] && [[ $NAMES != "" ]]; then
 	JSONNAME="-j $NAMES"
 else
 	JSONNAME=""
