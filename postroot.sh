@@ -72,4 +72,8 @@ else
 	echo "<INFO> dtoverlay=pi3-miniuart-bt or dtoverlay=pi3-disable-bt already set in /boot/config.txt"
 fi
 
+echo "<INFO> Disabling serial console in /boot/cmdline.txt"
+/bin/sed -i /boot/cmdline.txt -e "s/console=ttyAMA0,[0-9]\+ //"
+/bin/sed -i /boot/cmdline.txt -e "s/console=serial0,[0-9]\+ //"
+
 exit 0
