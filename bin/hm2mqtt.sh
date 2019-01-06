@@ -46,6 +46,10 @@ if [ -f $NAMES ] && [[ $NAMES != "" ]]; then
 else
 	JSONNAME=""
 fi
+PREFIX=$(jq -r '.MQTTPrefix' REPLACELBPCONFIGDIR/loxmatic.json)
+if [ $PREFIX = "" ]; then
+	$PREFIX="hm"
+fi
 
 # Start HM2MQTT
-REPLACELBPDATADIR/hm2mqtt/index.js -d -m mqtt://$CREDS$BROKER -a 127.0.0.1 -v $LEVEL $JSONNAME >> REPLACELBPLOGDIR/hm2mqtt.log 2>&1 &
+REPLACELBPDATADIR/hm2mqtt/index.js -d -n $PREFIX -m mqtt://$CREDS$BROKER -a 127.0.0.1 -v $LEVEL $JSONNAME >> REPLACELBPLOGDIR/hm2mqtt.log 2>&1 &
