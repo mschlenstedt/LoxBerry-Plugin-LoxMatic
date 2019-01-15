@@ -14,10 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-##########################################################################
 # Modules
-##########################################################################
-
 use LoxBerry::System;
 use LoxBerry::JSON;
 use LoxBerry::Web;
@@ -27,37 +24,51 @@ use CGI;
 use warnings;
 use strict;
 
-##########################################################################
-# Variables
-##########################################################################
-
-my $helplink = "https://www.loxwiki.eu/x/1IaxAg";
-my $helptemplate = "help.html";
-
-##########################################################################
-# Read Settings
-##########################################################################
-
 # Version of this script
 my $version = "0.0.1";
-my $cgi = CGI->new;
-$cgi->import_names('R');
 
+# CGI
+my $cgi = CGI->new;
+my $q = $cgi->Vars;
+
+# Everything from Forms
+my $saveformdata = $q->{saveformdata};
+
+my %pids;
+my $template;
+
+## Handle all ajax requests 
+if( $q->{ajax} ) {
+	
+	#require JSON;
+	my %response;
+	ajax_header();
+
+	if( $q->{ajax} eq "getpids" ) {
+		pids();
+		$response{pids} = \%pids;
+		print JSON::encode_json(\%response);
+	}
+
+	if( $q->{ajax} eq "cleannamesfile" ) {
+		cleannamesfile();
+		$response{response} = "OK";
+		print JSON::encode_json(\%response);
+	}
+
+	exit;
+
+}
+
+# Config
 my $cfgfile = "$lbpconfigdir/loxmatic.json";
 
-##########################################################################
-# Main program
-##########################################################################
+# Read json config
+my $jsonobj = LoxBerry::JSON->new();
+my $cfg = $jsonobj->open(filename => $cfgfile);
 
-# Prevent 'only used once' warnings from Perl
-$R::saveformdata if 0;
-%LoxBerry::Web::htmltemplate_options if 0;
-
-# CGI Vars
-my $supportkey = $R::supportkey;
-
-# Template
-my $maintemplate = HTML::Template->new(
+# Init Template
+$template = HTML::Template->new (
 	filename => "$lbptemplatedir/settings.html",
 	global_vars => 1,
 	loop_context_vars => 1,
@@ -66,46 +77,179 @@ my $maintemplate = HTML::Template->new(
 	%LoxBerry::Web::htmltemplate_options,
 	# debug => 1,
 	);
-my %SL = LoxBerry::System::readlanguage($maintemplate, "language.ini");
 
-# Save config
-if ($saveformdata) {
+# Language
+my %SL = LoxBerry::System::readlanguage($template, "language.ini");
 
-	my $jsonobj = LoxBerry::JSON->new();
-	my $cfg = $jsonobj->open(filename => $cfgfile);
-	$cfg->{Remote}->{Httpproxy} = $R::Remote_Httpproxy;
-	$cfg->{Remote}->{Httpport} = $R::Remote_Httpport;
-	if ($R::Remote_Autoconnect) {
-	       $cfg->{Remote}->{Autoconnect} = "1";
-	} else {
-	       $cfg->{Remote}->{Autoconnect} = "0";
-	}
-	$jsonobj->write();
-
-	if ($R::Remote_Httpproxy) {
-		my $proxy = $R::Remote_Httpproxy;
-		my $port = $R::Remote_Httpport;
-		$resp = `/bin/sed -i 's#^;http-proxy .*#http-proxy $proxy $port#g' $lbhomedir/system/supportvpn/loxberry.cfg 2>&1`;
-		$resp = `/bin/sed -i 's#^http-proxy .*#http-proxy $proxy $port#g' $lbhomedir/system/supportvpn/loxberry.cfg 2>&1`;
-		$resp = `/bin/sed -i 's#^;http-proxy\$#http-proxy $proxy $port#g' $lbhomedir/system/supportvpn/loxberry.cfg 2>&1`;
-		$resp = `/bin/sed -i 's#^http-proxy\$#http-proxy $proxy $port#g' $lbhomedir/system/supportvpn/loxberry.cfg 2>&1`;
-	} else {
-		$resp = `/bin/sed -i 's#^http-proxy .*#;http-proxy#g' $lbhomedir/system/supportvpn/loxberry.cfg 2>&1`;
-	}
-
+# Switch between forms
+our %navbar;
+if( !$q->{form} or $q->{form} eq "settings" ) {
+	$navbar{10}{active} = 1;
+	$template->param("FORM_SETTINGS", 1);
+	settings_form();
+}
+elsif ( $q->{form} eq "sniffer" ) {
+	$navbar{20}{active} = 1;
+	$template->param("FORM_SNIFFER", 1);
+	sniffer_form();
+}
+elsif ( $q->{form} eq "logs" ) {
+	$navbar{90}{active} = 1;
+	$template->param("FORM_LOGS", 1);
+	$template->param("FORM_DISABLE_BUTTONS", 1);
+	$template->param("FORM_DISABLE_JS", 1);
+	logs_form();
 }
 
-$maintemplate->param("FORM1", 1);
-
-# Print Template
-my $template_title = $SL{'COMMON.LOXBERRY_MAIN_TITLE'} . ": " . $SL{'REMOTE.WIDGETLABEL'};
-LoxBerry::Web::head();
-LoxBerry::Web::pagestart($template_title, $helplink, $helptemplate);
-if ($maintemplate->param("FORM1")) {
-	print LoxBerry::Log::get_notifications_html("remote");
-}
-print $maintemplate->output();
-LoxBerry::Web::pageend();
-LoxBerry::Web::foot();
+print_form();
 
 exit;
+
+######################################################################
+# Print Form
+######################################################################
+sub print_form
+{
+        my $plugintitle = "LoxMatic v" . LoxBerry::System::pluginversion();
+	my $helplink = "https://www.loxwiki.eu/x/1IaxAg";
+	my $helptemplate = "help.html";
+
+        $navbar{10}{Name} = "Settings";
+        $navbar{10}{URL} = 'index.cgi';
+
+        $navbar{20}{Name} = "Sniffer";
+        $navbar{20}{URL} = 'index.cgi?form=sniffer';
+
+        $navbar{90}{Name} = "Logfiles";
+        $navbar{90}{URL} = 'index.cgi?form=logs';
+
+        LoxBerry::Web::lbheader($plugintitle, $helplink, $helptemplate);
+
+        print $template->output();
+
+        LoxBerry::Web::lbfooter();
+
+}
+
+########################################################################
+# Settings Form
+########################################################################
+sub settings_form
+{
+
+	# Save config
+	if ( $saveformdata ) {
+
+		my $uploadfile = $cgi->param('NamesFile');
+		#print STDERR "The upload file is $uploadfile.\n";
+		if ($uploadfile) {
+			# Max filesize (KB)
+			my $max_filesize = 5000;
+
+			# Filter Backslashes
+			$uploadfile =~ s/.*[\/\\](.*)/$1/;
+
+			# Filesize
+			my $filesize = -s $uploadfile;
+			$filesize /= 1000;
+			#print STDERR "The upload file is $filesize kB.\n";
+
+			# If it's larger than allowed...
+			#if ($filesize > $max_filesize) {
+				#$error = $SL{'PLUGININSTALL.UI_INSTALL_ERR_MAX_FILESIZE'};
+				#&error;
+				#}
+
+			# json ending is important for nodejs
+			my $savefile;
+			if ($uploadfile !~ /^.+\.(json)$/) {
+				$savefile = "$uploadfile.json";
+			} else {
+				$savefile = $uploadfile;
+			}
+
+			# Save file
+			open (FILE, ">/tmp/$savefile");
+			while (read ($uploadfile, my $Buffer, 1024)) {
+				    print FILE $Buffer;
+			}
+			close FILE;
+
+			# Test if we have a valid json
+			my $jsontest = LoxBerry::JSON->new();
+			my $testcfg = $jsontest->open(filename => "/tmp/$savefile");
+			if (!$testcfg) {
+				#print STDERR "$savefile is not a valid json file.\n";
+				$cfg->{NamesFile} = "";
+				system ("rm /tmp/$savefile");
+			} else {
+				#print STDERR "$savefile is a valid json file.\n";
+				if ($cfg->{NamesFile}) {
+					system ("rm $lbpconfigdir/$cfg->{NamesFile}");
+				}
+				system ("mv /tmp/$savefile $lbpconfigdir");
+				$cfg->{NamesFile} = "$savefile";
+			}
+		}
+
+		$cfg->{BrokerPassword} = $q->{BrokerPassword};
+		$cfg->{BrokerUsername} = $q->{BrokerUsername};
+		$cfg->{Debug} = $q->{Debug};
+		$cfg->{EnableHM2MQTT} = $q->{EnableHM2MQTT};
+		$cfg->{EnableRFD} = $q->{EnableRFD};
+		$cfg->{HM2MQTTPort} = $q->{HM2MQTTPort};
+		$cfg->{RFDPort} = $q->{RFDPort};
+		$jsonobj->write();
+
+	}
+
+	# Push json config to template
+	my $cfgfilecontent = LoxBerry::System::read_file($cfgfile);
+	$cfgfilecontent =~ s/[\r\n]//g;
+	$template->param('JSONCONFIG', $cfgfilecontent);
+	
+	$template->param('CURRENTNAMESFILE', $cfg->{NamesFile});
+
+}
+
+######################################################################
+# AJAX functions
+######################################################################
+
+sub pids 
+{
+	$pids{'rfd'} = trim(`pgrep -f packages-eQ-3/RFD/bin/rfd`) ;
+	$pids{'hm2mqtt'} = trim(`pgrep -f loxmatic/hm2mqtt/index.js`) ;
+}	
+
+sub cleannamesfile
+{
+	# Read json config
+	my $cfgfile = "$lbpconfigdir/loxmatic.json";
+	my $jsonobj = LoxBerry::JSON->new();
+	my $cfg = $jsonobj->open(filename => $cfgfile);
+	if ($cfg->{NamesFile}) {
+		system ("rm $lbpconfigdir/$cfg->{NamesFile}");
+	}
+	$cfg->{NamesFile} = "";
+	$jsonobj->write();
+}	
+
+
+sub pkill 
+{
+	my ($process) = @_;
+	`pkill $process`;
+	sleep 1;
+	`pkill --signal SIGKILL $process`;
+}
+	
+sub ajax_header
+{
+	print $cgi->header(
+			-type => 'application/json',
+			-charset => 'utf-8',
+			-status => '200 OK',
+	);
+}
+

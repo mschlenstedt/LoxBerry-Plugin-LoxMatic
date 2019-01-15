@@ -1,10 +1,11 @@
 {
-   "EnableRFD" : "true",
-   "EnableHM2MQTT" : "true",
-   "Debug" : "true",
-   "MQTTPrefix" : "hm",
+   "EnableRFD" : "1",
+   "EnableHM2MQTT" : "1",
+   "Debug" : "1",
    "BrokerAddress" : "127.0.0.1",
    "BrokerUsername" : "loxberry",
    "BrokerPassword" : "loxberry",
+   "HM2MQTTPort" : "2127",
+   "RFDPort" : "2001",
    "NamesFile" : ""
 }
