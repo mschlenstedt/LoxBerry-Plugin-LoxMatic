@@ -8,7 +8,7 @@ fi
 PLUGINNAME=REPLACELBPPLUGINDIR
 
 export HM_HOME=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/LinuxBasis
-export LD_LIBRARY_PATH=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/LinuxBasis/lib/:/opt/loxberry/data/plugins/loxmatic/occu/arm-gnueabihf/packages-eQ-3/RFD/lib
+export LD_LIBRARY_PATH=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/LinuxBasis/lib/:$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/RFD/lib
 
 # Kill existing RFD
 if pgrep -f packages-eQ-3/RFD/bin/rfd > /dev/null 2>&1 ; then

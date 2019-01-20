@@ -32,7 +32,7 @@ else
 fi
 
 # MQTT Parameters
-PORT=$(jq -r '.HM2MQTTPort' /opt/loxberry/config/plugins/loxmatic/loxmatic.json)
+PORT=$(jq -r '.HM2MQTTPort' REPLACELBPCONFIGDIR/loxmatic.json)
 BROKER=$(jq -r '.BrokerAddress' REPLACELBPCONFIGDIR/loxmatic.json)
 USERNAME=$(jq -r '.BrokerUsername' REPLACELBPCONFIGDIR/loxmatic.json)
 PASSWORD=$(jq -r '.BrokerPassword' REPLACELBPCONFIGDIR/loxmatic.json)
