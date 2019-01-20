@@ -1,1 +1,3 @@
 loxberry ALL = NOPASSWD: REPLACELBPBINDIR/rfd.sh
+loxberry ALL = NOPASSWD: REPLACELBPBINDIR/firmwareupgrade.sh
+loxberry ALL = NOPASSWD: REPLACELBHOMEDIR/system/daemons/plugins/REPLACELBPPLUGINDIR

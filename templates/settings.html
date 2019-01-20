@@ -75,6 +75,21 @@
 
 <DIV	class="lb_flex-container settings">
 	<DIV	class="lb_flex-item-label">
+		<LABEL	class=	"control-label" ><TMPL_VAR SETTINGS.LABEL_LOGLEVEL></LABEL>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item">
+		<TMPL_VAR LOGLEVEL>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item-help">
+		<TMPL_VAR SETTINGS.HINT_LOGLEVEL>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+</DIV>
+
+<DIV	class="lb_flex-container settings">
+	<DIV	class="lb_flex-item-label">
 		<LABEL	class=	"control-label"
 			for="NamesFile"><TMPL_VAR SETTINGS.LABEL_NAMESFILE></LABEL>
 	</DIV>
@@ -108,6 +123,7 @@
 	<DIV	class="lb_flex-item-spacer"></DIV>
 </DIV>
 
+<!--
 <DIV	class="lb_flex-container settings">
 	<DIV	class="lb_flex-item-label">
 		<LABEL	class=	"control-label"
@@ -124,6 +140,7 @@
 	</DIV>
 	<DIV	class="lb_flex-item-spacer"></DIV>
 </DIV>
+-->
 
 <DIV	class="lb_flex-container settings">
 	<DIV	class="lb_flex-item-label">
@@ -138,6 +155,23 @@
 	<DIV	class="lb_flex-item-spacer"></DIV>
 	<DIV	class="lb_flex-item-help hint">
 		<TMPL_VAR SETTINGS.HINT_HM2MQTTPORT>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+</DIV>
+
+<DIV	class="lb_flex-container settings">
+	<DIV	class="lb_flex-item-label">
+		<LABEL	class=	"control-label"
+			for="HM2MQTTPrefix"><TMPL_VAR SETTINGS.LABEL_HM2MQTTPREFIX></LABEL>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item">
+		<input width="100%" value="" id="HM2MQTTPrefix" name="HM2MQTTPrefix" type="text" class="textfield" 
+		data-validation-rule="special:alphanumeric" data-validation-error-msg="<TMPL_VAR SETTINGS.MSG_VALINVALID_HM2MQTTPREFIX>">
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item-help hint">
+		<TMPL_VAR SETTINGS.HINT_HM2MQTTPREFIX>
 	</DIV>
 	<DIV	class="lb_flex-item-spacer"></DIV>
 </DIV>
@@ -177,7 +211,6 @@
 <br><br>
 <center>
 <button type="submit" form="main_form" name="btnsubmit" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon=""><TMPL_VAR SETTINGS.BUTTON_SAVE></button>
-<button type="submit" form="main_form" name="btnsubmit" id="btnsubmit" data-role="button" data-inline="true" data-mini="true" data-icon=""><TMPL_VAR SETTINGS.BUTTON_RESTART></button>
 </center>
 
 </FORM>
@@ -249,9 +282,9 @@ function update_pids()
 			$("#rfdstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_RFD_NOTRUNNING>");
 		}
 		if(resp.pids.hm2mqtt != null) {
-			$("#hm2mqttstate").attr("style", "color:green").html("<TMPL_VAR SETTINGS.MSG_RFD_RUNNING> (PID "+resp.pids.hm2mqtt+")");
+			$("#hm2mqttstate").attr("style", "color:green").html("<TMPL_VAR SETTINGS.MSG_HM2MQTT_RUNNING> (PID "+resp.pids.hm2mqtt+")");
 		} else {
-			$("#hm2mqttstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_RFD_NOTRUNNING>");
+			$("#hm2mqttstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_HM2MQTT_NOTRUNNING>");
 		}
 		
 	})
@@ -293,5 +326,23 @@ function clean_namesfile()
 }
 
 </script>
+
+</TMPL_IF>
+
+
+
+<!-- ********************* FORM_SNIFFER ******************** -->
+<TMPL_IF FORM_SNIFFER>
+
+<TMPL_VAR SETTINGS.HINT_LATER>
+
+</TMPL_IF>
+
+
+
+<!-- ********************* FORM_FIRMWARE ******************** -->
+<TMPL_IF FORM_FIRMWARE>
+
+<TMPL_VAR SETTINGS.HINT_LATER>
 
 </TMPL_IF>

@@ -91,14 +91,12 @@ if( !$q->{form} or $q->{form} eq "settings" ) {
 elsif ( $q->{form} eq "sniffer" ) {
 	$navbar{20}{active} = 1;
 	$template->param("FORM_SNIFFER", 1);
-	sniffer_form();
+	#sniffer_form();
 }
-elsif ( $q->{form} eq "logs" ) {
-	$navbar{90}{active} = 1;
-	$template->param("FORM_LOGS", 1);
-	$template->param("FORM_DISABLE_BUTTONS", 1);
-	$template->param("FORM_DISABLE_JS", 1);
-	logs_form();
+elsif ( $q->{form} eq "firmware" ) {
+	$navbar{30}{active} = 1;
+	$template->param("FORM_FIRMWARE", 1);
+	#firmware_form();
 }
 
 print_form();
@@ -114,14 +112,18 @@ sub print_form
 	my $helplink = "https://www.loxwiki.eu/x/1IaxAg";
 	my $helptemplate = "help.html";
 
-        $navbar{10}{Name} = "Settings";
+        $navbar{10}{Name} = $SL{'SETTINGS.LABEL_NAV_SETTINGS'};
         $navbar{10}{URL} = 'index.cgi';
 
-        $navbar{20}{Name} = "Sniffer";
+        $navbar{20}{Name} = $SL{'SETTINGS.LABEL_NAV_SNIFFER'};
         $navbar{20}{URL} = 'index.cgi?form=sniffer';
 
-        $navbar{90}{Name} = "Logfiles";
-        $navbar{90}{URL} = 'index.cgi?form=logs';
+        $navbar{30}{Name} = $SL{'SETTINGS.LABEL_NAV_FIRMWARE'};
+        $navbar{30}{URL} = 'index.cgi?form=firmware';
+
+        $navbar{90}{Name} = $SL{'SETTINGS.LABEL_NAV_LOGFILES'};
+	$navbar{90}{URL} =  LoxBerry::Web::loglist_url();
+        $navbar{90}{target} = '_blank';
 
         LoxBerry::Web::lbheader($plugintitle, $helplink, $helptemplate);
 
@@ -188,18 +190,30 @@ sub settings_form
 					system ("rm $lbpconfigdir/$cfg->{NamesFile}");
 				}
 				system ("mv /tmp/$savefile $lbpconfigdir");
-				$cfg->{NamesFile} = "$savefile";
+				$cfg->{NamesFile} = "$lbpconfigdir/$savefile";
 			}
 		}
 
 		$cfg->{BrokerPassword} = $q->{BrokerPassword};
 		$cfg->{BrokerUsername} = $q->{BrokerUsername};
-		$cfg->{Debug} = $q->{Debug};
+		if (LoxBerry::System::pluginloglevel() eq "7") {
+			$cfg->{Debug} = "1";
+		} else {
+			$cfg->{Debug} = "0";
+		}
 		$cfg->{EnableHM2MQTT} = $q->{EnableHM2MQTT};
 		$cfg->{EnableRFD} = $q->{EnableRFD};
 		$cfg->{HM2MQTTPort} = $q->{HM2MQTTPort};
-		$cfg->{RFDPort} = $q->{RFDPort};
+		$cfg->{HM2MQTTPrefix} = $q->{HM2MQTTPrefix};
+		#$cfg->{RFDPort} = $q->{RFDPort};
 		$jsonobj->write();
+
+		# RFD Port
+		#my $port = $cfg->{RFDPort};
+		#system ("/bin/sed -i 's#Listen Port = \\(.*\\)#Listen Port = $port#g' $lbpconfigdir/rfd.conf");
+
+		# Kill / Restart
+		system ("sudo $lbhomedir/system/daemons/plugins/$lbpplugindir");
 
 	}
 
@@ -207,6 +221,9 @@ sub settings_form
 	my $cfgfilecontent = LoxBerry::System::read_file($cfgfile);
 	$cfgfilecontent =~ s/[\r\n]//g;
 	$template->param('JSONCONFIG', $cfgfilecontent);
+
+	my $loglevelhtml = LoxBerry::Web::loglevel_select_html( LABEL => '', FORM => 'loglevel', DATA_MINI => 1 );
+	$template->param('LOGLEVEL', $loglevelhtml);
 	
 	$template->param('CURRENTNAMESFILE', $cfg->{NamesFile});
 

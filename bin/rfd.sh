@@ -17,7 +17,7 @@ echo out > /sys/class/gpio/gpio18/direction
 # Kill existing RFD
 if pgrep -f packages-eQ-3/RFD/bin/rfd > /dev/null 2>&1 ; then
 	pkill -f packages-eQ-3/RFD/bin/rfd
-	sleep 1
+	sleep 0.1
 	pkill -9 -f packages-eQ-3/RFD/bin/rfd
 fi
 

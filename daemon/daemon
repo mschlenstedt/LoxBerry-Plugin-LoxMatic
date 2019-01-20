@@ -1,5 +1,25 @@
 #!/bin/bash
 
+# Kill existing RFD
+if pgrep -f packages-eQ-3/RFD/bin/rfd > /dev/null 2>&1 ; then
+	pkill -f packages-eQ-3/RFD/bin/rfd
+	sleep 0.1
+	pkill -9 -f packages-eQ-3/RFD/bin/rfd
+fi
+
+# Kill existing HM2MQTT
+if pgrep -f REPLACELBPPLUGINDIR/hm2mqtt/index.js > /dev/null 2>&1 ; then
+        pkill -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
+        sleep 0.1
+        pkill -9 -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
+fi
+
+# Firmware Upgrade after first reboot
+if [ -e REPLACELBPCONFIGDIR/do_firmwareupgrade ]; then
+	REPLACELBPBINDIR/firmwareupgrade.sh > /dev/null 2>&1
+	rm REPLACELBPCONFIGDIR/do_firmwareupgrade
+fi
+
 # Should RFD be started
 RFDENABLED=$(jq -r '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)
 

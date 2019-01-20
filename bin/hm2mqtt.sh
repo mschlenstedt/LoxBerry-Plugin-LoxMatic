@@ -8,7 +8,7 @@
 # Kill existing HM2MQTT
 if pgrep -f REPLACELBPPLUGINDIR/hm2mqtt/index.js > /dev/null 2>&1 ; then
         pkill -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
-        sleep 1
+        sleep 0.1
         pkill -9 -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
 
 fi
@@ -32,6 +32,7 @@ else
 fi
 
 # MQTT Parameters
+PORT=$(jq -r '.HM2MQTTPort' /opt/loxberry/config/plugins/loxmatic/loxmatic.json)
 BROKER=$(jq -r '.BrokerAddress' REPLACELBPCONFIGDIR/loxmatic.json)
 USERNAME=$(jq -r '.BrokerUsername' REPLACELBPCONFIGDIR/loxmatic.json)
 PASSWORD=$(jq -r '.BrokerPassword' REPLACELBPCONFIGDIR/loxmatic.json)
@@ -46,10 +47,10 @@ if [ -f $NAMES ] && [[ $NAMES != "" ]]; then
 else
 	JSONNAME=""
 fi
-PREFIX=$(jq -r '.MQTTPrefix' REPLACELBPCONFIGDIR/loxmatic.json)
+PREFIX=$(jq -r '.HM2MQTTPrefix' REPLACELBPCONFIGDIR/loxmatic.json)
 if [ $PREFIX = "" ]; then
 	$PREFIX="hm"
 fi
 
 # Start HM2MQTT
-REPLACELBPDATADIR/hm2mqtt/index.js -d -n $PREFIX -m mqtt://$CREDS$BROKER -a 127.0.0.1 -v $LEVEL $JSONNAME >> REPLACELBPLOGDIR/hm2mqtt.log 2>&1 &
+REPLACELBPDATADIR/hm2mqtt/index.js -b $PORT -d -n $PREFIX -m mqtt://$CREDS$BROKER -a 127.0.0.1 -v $LEVEL $JSONNAME >> REPLACELBPLOGDIR/hm2mqtt.log 2>&1 &
