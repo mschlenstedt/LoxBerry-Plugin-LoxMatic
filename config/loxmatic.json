@@ -1,5 +1,6 @@
 {
    "EnableRFD" : "1",
+   "EnableHMIPSERVER" : "1",
    "EnableHM2MQTT" : "1",
    "Debug" : "0",
    "BrokerAddress" : "127.0.0.1",
