@@ -2,6 +2,95 @@
 ReGaHss ChangeLog
 -----------------
 
+2018-02-27 Jens Maus <mail@jens-maus.de>
+
+  * optimized system.Exec() to avoid creating zombie processes in case
+    background execution using "&" is used.
+
+#### BETA27-2018-01-14 (440f8d6) Release ####################################
+
+2017-12-26 Jens Maus <mail@jens-maus.de>
+
+  * added "incorrect use" warnings for use of Device() on DP objects and
+    LastTimestamp() and LastTimestampSeconds() on channel objects similar to
+    the already existing warning on incorrect use of AlDestMap().
+  * added automatic variable stack enlargement which should allow to deal with
+    way more variables on the script execution stack than before.
+
+2017-12-18 Jens Maus <mail@jens-maus.de>
+
+  * added default charset encoding "iso-8859-1" to all xmlrpc responses so 
+    that clients should have additional information to decode xmlrpc responses
+    correctly.
+
+#### BETA26-2017-12-09 (b3bc9eb) Release ####################################
+
+2017-12-08 Jens Maus <mail@jens-maus.de>
+
+  * added minimum of 5k for globally modifying the number of Iterations using
+    system.MaxIterations(max)
+
+#### BETA25-2017-12-04 (518321a) Release ####################################
+
+2017-12-03 Jens Maus <mail@jens-maus.de>
+
+  * added system.MaxIterations(max) method which allows to modify the maximum
+    number of iterations for while()/foreach() loops. Calling this method
+    with 0 will result in while()/foreach() to loop indefinitly. Calling it
+    with -1 will restore the default of 500000 iterations.
+  * removed all ID_XXXXX_MAX_COUNT entries from the public symbolic constant
+    table were they didn't belong to.
+
+2017-11-24 Jens Maus <mail@jens-maus.de>
+
+  * fixed bug where invalid objects in the shared user object list required
+    multiple restarts to completly cleanup the list.
+
+#### BETA24-2017-11-14 (7338722) Release ####################################
+
+2017-11-14 Jens Maus <mail@jens-maus.de>
+
+  * fixed bug where deleting an object didn't remove it from the shared
+    user objects list. Also added an automatic cleanup routine upon loading
+    the regadom which will remove all invalid object ids in the shared user
+    objects list.
+
+2017-11-09 Jens Maus <mail@jens-maus.de>
+
+  * fixed bug where using ToTime() on a time object and Filename() on a xml
+    object returned incorrect results.
+
+#### BETA23-2017-11-07 (705d243) Release ####################################
+
+2017-11-06 Jens Maus <mail@jens-maus.de>
+
+  * fixed more DST related bugs in the time module which could result in
+    various different issues at DST borders.
+
+2017-11-03 Jens Maus <mail@jens-maus.de>
+
+  * modified error output to be more verbose when assigning incompatible 
+    data to a system variable of a different type.
+
+#### BETA22-2017-11-03 (9f7bc6c) Release ####################################
+
+2017-11-01 Jens Maus <mail@jens-maus.de>
+
+  * fixed bug where on a DST switching date the internal time module crashed
+    ReGaHss because internal time calculation routines couldn't deal with
+    DST borders.
+
+2017-10-11 Jens Maus <mail@jens-maus.de>
+
+  * added warning output if the maximum number of iterations for while() and
+    foreach() use has been reached. This should make it easier to reveal
+    situations where while()/foreach() uses show strange results because of
+    the max iteration limitation. Also increased the maximum iterations to
+    500000 because this also only takes a few seconds to be processed and
+    shouldn't block the ReGa too long.
+
+#### BETA21-2017-10-01 (469725b) Release ####################################
+
 2017-09-23 Jens Maus <mail@jens-maus.de>
 
   * modified ToString(p) output for floating point values to be limited to the
@@ -226,7 +315,7 @@ ReGaHss ChangeLog
     always returned the object with the number the string started. Thus,
     dom.GetObject("2Test") always returned the root object instead of trying
     to search for an object with that particular string.
-  * fixed using LastTimeStamp() and LastTimeStampSeconds() on channel
+  * fixed using LastTimestamp() and LastTimestampSeconds() on channel
     objects like this had been possible.
 
 2017-05-26 Jens Maus <mail@jens-maus.de>
