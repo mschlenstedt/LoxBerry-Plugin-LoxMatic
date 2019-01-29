@@ -7,6 +7,13 @@ if pgrep -f packages-eQ-3/RFD/bin/rfd > /dev/null 2>&1 ; then
 	pkill -9 -f packages-eQ-3/RFD/bin/rfd
 fi
 
+# Kill existing multimacd
+if pgrep -f packages-eQ-3/RFD/bin/multimacd > /dev/null 2>&1 ; then
+	pkill -f packages-eQ-3/RFD/bin/multimacd
+	sleep 0.1
+	pkill -9 -f packages-eQ-3/RFD/bin/multimacd
+fi
+
 # Kill existing HM2MQTT
 if pgrep -f REPLACELBPPLUGINDIR/hm2mqtt/index.js > /dev/null 2>&1 ; then
         pkill -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
@@ -20,16 +27,22 @@ if [ -e REPLACELBPCONFIGDIR/do_firmwareupgrade ]; then
 	rm REPLACELBPCONFIGDIR/do_firmwareupgrade
 fi
 
-# Should RFD be started
+# What is enabled?
 RFDENABLED=$(jq -r '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)
+HMIPSERVERENABLED=$(jq -r '.EnableHMIPSERVER' REPLACELBPCONFIGDIR/loxmatic.json)
+HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' REPLACELBPCONFIGDIR/loxmatic.json)
 
+# Should multimacd be started: Needed if RFD or HMIPServer should be started
+if [ "$RFDENABLED" = "true" ] || [ "$RFDENABLED" = "1" ] || [ "$HMIPSERVERENABLED" = "true" ] || [ "$HMIPSERVERENABLED" = "1" ]; then
+	REPLACELBPBINDIR/multimacd.sh > /dev/null 2>&1
+fi
+
+# Should RFD be started
 if [ "$RFDENABLED" = "true" ] || [ "$RFDENABLED" = "1" ]; then
 	REPLACELBPBINDIR/rfd.sh > /dev/null 2>&1
 fi
 
 # Should HM2MQTT be started
-HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' REPLACELBPCONFIGDIR/loxmatic.json)
-
 if [ "$HM2MQTTENABLED" = "true" ] || [ "$HM2MQTTENABLED" = "1" ]; then
 	sudo -n -u loxberry REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1
 fi
