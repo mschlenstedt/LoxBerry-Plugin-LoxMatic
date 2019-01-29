@@ -35,6 +35,8 @@ ln -sv /tmp /var/status
 echo "<INFO> Configuring rsyslogd for RFD..."
 rm -v /etc/rsyslog.d/40-$PDIR-rfd.conf
 ln -sv $PCONFIG/rsyslog-rfd.conf /etc/rsyslog.d/40-$PDIR-rfd.conf 
+rm -v /etc/rsyslog.d/40-$PDIR-multimacd.conf
+ln -sv $PCONFIG/rsyslog-multimacd.conf /etc/rsyslog.d/40-$PDIR-multimacd.conf 
 systemctl restart rsyslog.service
 
 echo "<INFO> Configuring serial interface..."
