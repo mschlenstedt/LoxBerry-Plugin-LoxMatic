@@ -8,7 +8,7 @@ HM_HMIP_DEV=""
 HM_HMIP_DEVNODE=""
 
 # Kill existing RFD
-if pgrep -f packages-eQ-3/RFD/bin/rfd > /dev/null 2>&1 ; then
+if pgrep -f bin/rfd > /dev/null 2>&1 ; then
 	pkill -f bin/rfd
 	sleep 0.1
 	pkill -9 -f bin/rfd
@@ -84,7 +84,7 @@ if [[ -c /dev/raw-uart ]];  then
 else
 	# if no raw uart device is present we try to use the
 	# hardware specific tty device
-	if [[ -e REPLACELBCONFIGDIR/is_raspberry.cfg ]];  then
+	if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
       		HM_HOST_GPIO_UART="/dev/ttyAMA0"
 	else
       		HM_HOST_GPIO_UART="/dev/ttyS0"
@@ -96,7 +96,7 @@ fi
 
 # depending on the host hardware we have to define different
 # reset pins
-if [[ -e /opt/loxberry/config/system/is_raspberry.cfg ]];  then
+if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
 	HM_HOST_GPIO_RESET=18  # GPIO18/GPIO.1 (pin 12)
 fi
 
