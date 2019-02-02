@@ -8,17 +8,11 @@ fi
 export HM_HOME=REPLACELBPDATADIR/occu/arm-gnueabihf/packages-eQ-3/RFD
 export LD_LIBRARY_PATH=$HM_HOME/lib
 
-# GPIO18 is needed for resetting
-if [ ! -e /sys/class/gpio/gpio18 ]; then
-	echo 18 > /sys/class/gpio/export
-fi
-echo out > /sys/class/gpio/gpio18/direction
-
-# Kill existing RFD
-if pgrep -f packages-eQ-3/RFD/bin/multimacd > /dev/null 2>&1 ; then
-	pkill -f packages-eQ-3/RFD/bin/multimacd
+# Kill existing multimacd
+if pgrep -f bin/multimacd > /dev/null 2>&1 ; then
+	pkill -f bin/multimacd
 	sleep 0.1
-	pkill -9 -f packages-eQ-3/RFD/bin/multimacd
+	pkill -9 -f bin/multimacd
 fi
 
 # Create a new entry for the logfile (for logmanager)

@@ -1,31 +1,117 @@
 #!/bin/bash
 
+# setup default HM RF variables
+HM_MODE="NORMAL"
+HM_HMRF_DEV=""
+HM_HMRF_DEVNODE=""
+HM_HMIP_DEV=""
+HM_HMIP_DEVNODE=""
+
 # Kill existing RFD
 if pgrep -f packages-eQ-3/RFD/bin/rfd > /dev/null 2>&1 ; then
-	pkill -f packages-eQ-3/RFD/bin/rfd
+	pkill -f bin/rfd
 	sleep 0.1
-	pkill -9 -f packages-eQ-3/RFD/bin/rfd
+	pkill -9 -f bin/rfd
 fi
 
 # Kill existing multimacd
-if pgrep -f packages-eQ-3/RFD/bin/multimacd > /dev/null 2>&1 ; then
-	pkill -f packages-eQ-3/RFD/bin/multimacd
+if pgrep -f bin/multimacd > /dev/null 2>&1 ; then
+	pkill -f bin/multimacd
 	sleep 0.1
-	pkill -9 -f packages-eQ-3/RFD/bin/multimacd
+	pkill -9 -f bin/multimacd
 fi
 
 # Kill existing HM2MQTT
-if pgrep -f REPLACELBPPLUGINDIR/hm2mqtt/index.js > /dev/null 2>&1 ; then
-        pkill -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
+if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
+        pkill -f hm2mqtt/index.js
         sleep 0.1
-        pkill -9 -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
+        pkill -9 -f hm2mqtt/index.js
 fi
 
 # Firmware Upgrade after first reboot
-if [ -e REPLACELBPCONFIGDIR/do_firmwareupgrade ]; then
+if [[ -e REPLACELBPCONFIGDIR/do_firmwareupgrade ]];  then
 	REPLACELBPBINDIR/firmwareupgrade.sh > /dev/null 2>&1
 	rm REPLACELBPCONFIGDIR/do_firmwareupgrade
 fi
+
+# Load EQ3 / RAW UART kernel modules
+modprobe bcm2835_raw_uart > /dev/null 2>&1
+modprobe  eq3_char_loop > /dev/null 2>&1
+#modprobe  rtc-rx8130 >/dev/null 2>&1
+
+# load the common i2c kernel modules
+if [[ -e REPLACELBCONFIGDIR/is_raspberry.cfg ]];  then
+	modprobe i2c_bcm2835
+fi
+modprobe i2c_dev
+
+# check for RX8130-CE RTC clock at 0x32 (Epson RX8130CE) which
+# is the RPI-RF-MOD onboard RTC.
+i2cget -y 1 0x32 0x32 2>/dev/null >/dev/null
+if [[ $? -eq 0 ]]; then
+	i2cset -y 1 0x32 0x1f 0x30 >/dev/null # turn on coldcap charging
+	modprobe i2c:rx8130
+	if [[ $? -eq 0 ]]; then
+		HM_RTC="rx8130"
+		[[ -c /dev/rtc0 ]] || echo rx8130 0x32 >/sys/class/i2c-dev/i2c-1/device/new_device
+		[[ -c /dev/rtc0 ]] || echo 0x32 >/sys/class/i2c-dev/i2c-1/device/delete_device
+
+		# we found a RX8130, thus we assume the RPI-RF-MOD to
+		# be present, thus we setup the LED GPIOs to OUT
+		if [[ -c /dev/rtc0 ]]; then
+			# setup the LEDs to show a constant yellow light
+			echo default-on >/sys/class/leds/rpi_rf_mod\:green/trigger
+			echo default-on >/sys/class/leds/rpi_rf_mod\:red/trigger
+			echo none >/sys/class/leds/rpi_rf_mod\:blue/trigger
+		fi
+	fi
+fi
+
+# until we have a proper tool to identify the
+# type of the GPIO rf module we assume a RPI-RF-MOD
+# as soon as we have found a rx8130 RTC clock
+if [[ "${HM_RTC}" == "rx8130" ]];  then
+	HM_HMRF_DEV="RPI-RF-MOD"
+	HM_HMIP_DEV="RPI-RF-MOD"
+else
+	HM_HMRF_DEV="HM-MOD-RPI-PCB"
+	HM_HMIP_DEV="HM-MOD-RPI-PCB"
+fi
+
+# set default HM_HOST_GPIO_UART
+if [[ -c /dev/raw-uart ]];  then
+	HM_HOST_GPIO_UART="/dev/raw-uart"
+else
+	# if no raw uart device is present we try to use the
+	# hardware specific tty device
+	if [[ -e REPLACELBCONFIGDIR/is_raspberry.cfg ]];  then
+      		HM_HOST_GPIO_UART="/dev/ttyAMA0"
+	else
+      		HM_HOST_GPIO_UART="/dev/ttyS0"
+	fi
+fi
+
+# also set tty device to low_latency mode (if possible)
+/bin/setserial ${HM_HOST_GPIO_UART} low_latency > /dev/null 2>&1
+
+# depending on the host hardware we have to define different
+# reset pins
+if [[ -e /opt/loxberry/config/system/is_raspberry.cfg ]];  then
+	HM_HOST_GPIO_RESET=18  # GPIO18/GPIO.1 (pin 12)
+fi
+
+if [[ -n "${HM_HOST_GPIO_RESET}" ]];  then
+	echo ${HM_HOST_GPIO_RESET} > /sys/class/gpio/export
+	echo out > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/direction
+	echo 0 > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/value
+	sleep 0.1
+	echo 1 > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/value
+	sleep 0.1
+	echo in > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/direction
+fi
+
+# save all HM_ env variables
+set | grep '^HM_' > /var/hm_mode
 
 # What is enabled?
 RFDENABLED=$(jq -r '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)
@@ -33,18 +119,25 @@ HMIPSERVERENABLED=$(jq -r '.EnableHMIPSERVER' REPLACELBPCONFIGDIR/loxmatic.json)
 HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' REPLACELBPCONFIGDIR/loxmatic.json)
 
 # Should multimacd be started: Needed if RFD or HMIPServer should be started
-if [ "$RFDENABLED" = "true" ] || [ "$RFDENABLED" = "1" ] || [ "$HMIPSERVERENABLED" = "true" ] || [ "$HMIPSERVERENABLED" = "1" ]; then
+if [[ "$RFDENABLED" = "true" ] || [[ "$RFDENABLED" = "1" ] || [[ "$HMIPSERVERENABLED" = "true" ] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 	REPLACELBPBINDIR/multimacd.sh > /dev/null 2>&1
 fi
 
 # Should RFD be started
-if [ "$RFDENABLED" = "true" ] || [ "$RFDENABLED" = "1" ]; then
+if [[ "$RFDENABLED" = "true" ] || [[ "$RFDENABLED" = "1" ]];  then
 	REPLACELBPBINDIR/rfd.sh > /dev/null 2>&1
 fi
 
 # Should HM2MQTT be started
-if [ "$HM2MQTTENABLED" = "true" ] || [ "$HM2MQTTENABLED" = "1" ]; then
+if [[ "$HM2MQTTENABLED" = "true" ] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 	sudo -n -u loxberry REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1
 fi
+
+# output some status information
+echo -n "BidCos-RF: "
+[[ -n "${HM_HMRF_DEV}" ]] && echo -n "${HM_HMRF_DEV}, " || echo -n "none, "
+echo -n "HmIP: "
+[[ -n "${HM_HMIP_DEV}" ]] && echo -n "${HM_HMIP_DEV}, " || echo -n "none, "
+echo "OK"
 
 chown -R loxberry:loxberry REPLACELBPCONFIGDIR

@@ -6,10 +6,10 @@
 #fi
 
 # Kill existing HM2MQTT
-if pgrep -f REPLACELBPPLUGINDIR/hm2mqtt/index.js > /dev/null 2>&1 ; then
-        pkill -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
+if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
+        pkill -f hm2mqtt/index.js
         sleep 0.1
-        pkill -9 -f REPLACELBPPLUGINDIR/hm2mqtt/index.js
+        pkill -9 -f hm2mqtt/index.js
 
 fi
 
