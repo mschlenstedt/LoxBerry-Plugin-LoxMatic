@@ -1,11 +1,15 @@
 #!/bin/bash
 
+PLUGINNAME=REPLACELBPPLUGINDIR
+
 # setup default HM RF variables
 HM_MODE="NORMAL"
 HM_HMRF_DEV=""
 HM_HMRF_DEVNODE=""
+HM_HMRF_ORIGDEVNODE=""
 HM_HMIP_DEV=""
 HM_HMIP_DEVNODE=""
+HM_HMIP_ORIGDEVNODE=""
 
 # Kill existing RFD
 if pgrep -f bin/rfd > /dev/null 2>&1 ; then
@@ -28,16 +32,13 @@ if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
         pkill -9 -f hm2mqtt/index.js
 fi
 
-# Firmware Upgrade after first reboot
-if [[ -e REPLACELBPCONFIGDIR/do_firmwareupgrade ]];  then
-	REPLACELBPBINDIR/firmwareupgrade.sh > /dev/null 2>&1
-	rm REPLACELBPCONFIGDIR/do_firmwareupgrade
-fi
+#
+# Identify Hardware
+#
 
 # Load EQ3 / RAW UART kernel modules
 modprobe bcm2835_raw_uart > /dev/null 2>&1
-modprobe  eq3_char_loop > /dev/null 2>&1
-#modprobe  rtc-rx8130 >/dev/null 2>&1
+modprobe eq3_char_loop > /dev/null 2>&1
 
 # load the common i2c kernel modules
 if [[ -e REPLACELBCONFIGDIR/is_raspberry.cfg ]];  then
@@ -78,28 +79,45 @@ else
 	HM_HMIP_DEV="HM-MOD-RPI-PCB"
 fi
 
+#
+# Check here for any USB devices
+#
+
+#
+# Init Hardware
+#
+
 # set default HM_HOST_GPIO_UART
-if [[ -c /dev/raw-uart ]];  then
-	HM_HOST_GPIO_UART="/dev/raw-uart"
+if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
+	HM_HOST_GPIO_UART="/dev/ttyAMA0"
+	HM_HOST_GPIO_RESET=18  # GPIO18/GPIO.1 (pin 12)
 else
-	# if no raw uart device is present we try to use the
-	# hardware specific tty device
-	if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
-      		HM_HOST_GPIO_UART="/dev/ttyAMA0"
+	HM_HOST_GPIO_UART="/dev/ttyS0"
+	HM_HOST_GPIO_RESET=""
+fi
+
+# Raw-UART Devices
+if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
+   [[ "${HM_HMIP_DEV}" == "HM-MOD-RPI-PCB" ]] ||
+   [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
+   [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
+	if [[ -c /dev/raw-uart ]];  then
+		HM_HMRF_DEVNODE="/dev/raw-uart"
+		HM_HMIP_DEVNODE="/dev/raw-uart"
 	else
-      		HM_HOST_GPIO_UART="/dev/ttyS0"
+		# if no raw uart device is present we try to use the
+		# hardware specific tty device
+		HM_HMRF_DEVNODE="${HM_HOST_GPIO_UART}"
+		HM_HMIP_DEVNODE="${HM_HOST_GPIO_UART}"
 	fi
 fi
 
 # also set tty device to low_latency mode (if possible)
-/bin/setserial ${HM_HOST_GPIO_UART} low_latency > /dev/null 2>&1
-
-# depending on the host hardware we have to define different
-# reset pins
-if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
-	HM_HOST_GPIO_RESET=18  # GPIO18/GPIO.1 (pin 12)
+if [[ -c "${HM_HOST_GPIO_UART}" ]]; then
+	/bin/setserial ${HM_HOST_GPIO_UART} low_latency > /dev/null 2>&1
 fi
 
+# Reset Module
 if [[ -n "${HM_HOST_GPIO_RESET}" ]];  then
 	echo ${HM_HOST_GPIO_RESET} > /sys/class/gpio/export
 	echo out > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/direction
@@ -109,6 +127,84 @@ if [[ -n "${HM_HOST_GPIO_RESET}" ]];  then
 	sleep 0.1
 	echo in > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/direction
 fi
+
+#
+# Query RF Parameters
+#
+
+# Libs for /eq3configcmd
+export HM_HOME=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/LinuxBasis
+export LD_LIBRARY_PATH=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/LinuxBasis/lib/:$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/RFD/lib
+
+# 1. query for HM-MOD-RPI-PCB parameters
+if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
+   [[ "${HM_HMIP_DEV}" == "HM-MOD-RPI-PCB" ]]; then
+
+	# use eq3configcmd to query for the default rf address and if it is empty
+	# or 0x00ffff there is either no HM-MOD-RPI-PCB or it is a RPI-RF-MOD
+	RF_ADDRESS=$($HM_HOME/bin/eq3configcmd read-default-rf-address -f ${HM_HOST_GPIO_UART} -h 2>&1 | grep "^0x" | tr -d '[:space:]')
+	if [[ -n "${RF_ADDRESS}" ]] && [[ "${RF_ADDRESS}" != "0x00ffff" ]]; then
+		RF_SGTIN=$($HM_HOME/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -t HM-MOD-UART -c -sg 2>&1 | sed -n 's/.*SGTIN: \([0-9A-Fa-f]\{24\}\).*/\1/p')
+		RF_SERIAL=$($HM_HOME/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -t HM-MOD-UART -c -se 2>&1 | grep "SerialNumber:" | cut -d' ' -f5 | tr -d '[:space:]')
+		RF_VERSION=$($HM_HOME/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -t HM-MOD-UART -c -v 2>&1 | grep "Version:" | cut -d' ' -f5 | tr -d '[:space:]')
+		HM_HMRF_SERIAL=${RF_SERIAL}
+		HM_HMRF_VERSION=${RF_VERSION}
+		HM_HMRF_ADDRESS=${RF_ADDRESS}
+		HM_HMIP_SERIAL=${RF_SERIAL}
+		HM_HMIP_VERSION=${RF_VERSION}
+		HM_HMIP_ADDRESS=${RF_ADDRESS}
+		HM_HMIP_SGTIN=${RF_SGTIN}
+
+else
+		HM_HMRF_DEV=
+		HM_HMRF_SERIAL=
+		HM_HMRF_VERSION=
+		HM_HMRF_ADDRESS=
+		HM_HMIP_DEV=
+		HM_HMIP_SERIAL=
+		HM_HMIP_VERSION=
+		HM_HMIP_ADDRESS=
+		HM_HMIP_SGTIN=
+fi
+
+# 2. query for RPI-RF-MOD parameters
+if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
+   [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
+
+	# use hmip-copro-update only to query all rf module related info (eq3configcmd is not supported for RPI-RF-MOD)
+	RF_INFO=$(/usr/bin/java -Dgnu.io.rxtx.SerialPorts=${HM_HOST_GPIO_UART} -jar /opt/HmIP/hmip-copro-update.jar -p ${HM_HOST_GPIO_UART} -v -a 2>&1)
+	RF_SGTIN=$(echo ${RF_INFO} | sed -n 's/.*SGTIN = \([0-9A-Fa-f]\{24\}\).*/\1/p')
+	RF_VERSION=$(echo ${RF_INFO} | sed -n 's/.*Application version = \([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
+	RF_ADDRESS=$(echo ${RF_INFO} | sed -n 's/.*Radio address = \([0-9A-F]\{6\}\).*/0x\1/p')
+
+	if [[ -n "${RF_ADDRESS}" ]] || [[ -n "${RF_SGTIN}" ]]; then
+		# use the last 10 chars of the SGTIN as the serial number of the rf module
+		RF_SERIAL=$(echo -n ${RF_SGTIN} | tail -c 10)
+
+		if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]]; then
+			HM_HMRF_SERIAL=${RF_SERIAL}
+			HM_HMRF_VERSION=${RF_VERSION}
+			HM_HMRF_ADDRESS=${RF_ADDRESS}
+		fi
+
+		if [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
+			HM_HMIP_SERIAL=${RF_SERIAL}
+			HM_HMIP_VERSION=${RF_VERSION}
+			HM_HMIP_ADDRESS=${RF_ADDRESS}
+			HM_HMIP_SGTIN=${RF_SGTIN}
+		fi
+	else
+			HM_HMRF_DEV=
+			HM_HMRF_SERIAL=
+			HM_HMRF_VERSION=
+			HM_HMRF_ADDRESS=
+			HM_HMIP_DEV=
+			HM_HMIP_SERIAL=
+			HM_HMIP_VERSION=
+			HM_HMIP_ADDRESS=
+			HM_HMIP_SGTIN=
+	fi
+fi								
 
 # save all HM_ env variables
 set | grep '^HM_' > /var/hm_mode
