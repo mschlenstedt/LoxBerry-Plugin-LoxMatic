@@ -6,10 +6,8 @@ PLUGINNAME=REPLACELBPPLUGINDIR
 HM_MODE="NORMAL"
 HM_HMRF_DEV=""
 HM_HMRF_DEVNODE=""
-HM_HMRF_ORIGDEVNODE=""
 HM_HMIP_DEV=""
 HM_HMIP_DEVNODE=""
-HM_HMIP_ORIGDEVNODE=""
 
 # Kill existing RFD
 if pgrep -f bin/rfd > /dev/null 2>&1 ; then
@@ -155,7 +153,7 @@ if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
 		HM_HMIP_ADDRESS=${RF_ADDRESS}
 		HM_HMIP_SGTIN=${RF_SGTIN}
 
-else
+	else
 		HM_HMRF_DEV=
 		HM_HMRF_SERIAL=
 		HM_HMRF_VERSION=
@@ -165,6 +163,7 @@ else
 		HM_HMIP_VERSION=
 		HM_HMIP_ADDRESS=
 		HM_HMIP_SGTIN=
+	fi
 fi
 
 # 2. query for RPI-RF-MOD parameters
@@ -207,7 +206,7 @@ if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
 fi								
 
 # save all HM_ env variables
-set | grep '^HM_' > /var/hm_mode
+set | grep '^HM_' > /var/tmp/hm_env
 
 # What is enabled?
 RFDENABLED=$(jq -r '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)
@@ -215,17 +214,17 @@ HMIPSERVERENABLED=$(jq -r '.EnableHMIPSERVER' REPLACELBPCONFIGDIR/loxmatic.json)
 HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' REPLACELBPCONFIGDIR/loxmatic.json)
 
 # Should multimacd be started: Needed if RFD or HMIPServer should be started
-if [[ "$RFDENABLED" = "true" ] || [[ "$RFDENABLED" = "1" ] || [[ "$HMIPSERVERENABLED" = "true" ] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
+if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 	REPLACELBPBINDIR/multimacd.sh > /dev/null 2>&1
 fi
 
 # Should RFD be started
-if [[ "$RFDENABLED" = "true" ] || [[ "$RFDENABLED" = "1" ]];  then
+if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]];  then
 	REPLACELBPBINDIR/rfd.sh > /dev/null 2>&1
 fi
 
 # Should HM2MQTT be started
-if [[ "$HM2MQTTENABLED" = "true" ] || [[ "$HM2MQTTENABLED" = "1" ]];  then
+if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 	sudo -n -u loxberry REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1
 fi
 
