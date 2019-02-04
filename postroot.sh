@@ -31,6 +31,10 @@ rm -rv /etc/config/firmware
 ln -sv $PDATA/occu/firmware /etc/config/firmware
 rm -rv /var/status
 ln -sv /tmp /var/status
+rm -rv /opt/HMServer
+rm -rv /opt/HmIP
+ln -sv $PDATA/HMserver/HMServer /opt/HMServer
+ln -sv $PDATA/HMserver/HmIP /opt/HmIP
 
 echo "<INFO> Configuring rsyslogd for RFD..."
 rm -v /etc/rsyslog.d/40-$PDIR-rfd.conf
