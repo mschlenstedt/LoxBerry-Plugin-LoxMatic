@@ -206,7 +206,7 @@ if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
 fi								
 
 # save all HM_ env variables
-set | grep '^HM_' > /var/tmp/hm_env
+set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
 
 # What is enabled?
 RFDENABLED=$(jq -r '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)

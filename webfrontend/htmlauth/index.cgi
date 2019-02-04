@@ -235,8 +235,9 @@ sub settings_form
 
 sub pids 
 {
-	$pids{'rfd'} = trim(`pgrep -f packages-eQ-3/RFD/bin/rfd`) ;
-	$pids{'hm2mqtt'} = trim(`pgrep -f loxmatic/hm2mqtt/index.js`) ;
+	$pids{'rfd'} = trim(`pgrep -f bin/rfd`) ;
+	$pids{'hm2mqtt'} = trim(`pgrep -f hm2mqtt/index.js`) ;
+	$pids{'hmserver'} = trim(`pgrep -f HMServer/HMIPServer.jar`) ;
 }	
 
 sub cleannamesfile

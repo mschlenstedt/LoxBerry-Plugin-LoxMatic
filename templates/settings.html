@@ -33,7 +33,7 @@
 <center>
 	<div style="display:flex;align-items:center;justify-content:center;width:100%">
 		<center>
-		<span id="rfdstate"></span>&nbsp;|&nbsp;<span id="hm2mqttstate"></span>
+		<span id="rfdstate"></span>&nbsp;|&nbsp;<span id="hmserverstate"></span>&nbsp;|&nbsp;<span id="hm2mqttstate"></span>
 		</center>
 	</div>
 </center>
@@ -54,6 +54,21 @@
 	<DIV	class="lb_flex-item-spacer"></DIV>
 	<DIV	class="lb_flex-item-help">
 		<TMPL_VAR SETTINGS.HINT_ENABLERFD>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+</DIV>
+
+<DIV	class="lb_flex-container settings">
+	<DIV	class="lb_flex-item-label">
+		<LABEL	class=	"control-label" ><TMPL_VAR SETTINGS.LABEL_ENABLEHMIPSERVER></LABEL>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item">
+		<input type="checkbox" id="EnableHMIPSERVER" name="EnableHMIPSERVER" value="1" data-role="flipswitch">
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item-help">
+		<TMPL_VAR SETTINGS.HINT_ENABLEHMIPSERVER>
 	</DIV>
 	<DIV	class="lb_flex-item-spacer"></DIV>
 </DIV>
@@ -122,25 +137,6 @@
 	</DIV>
 	<DIV	class="lb_flex-item-spacer"></DIV>
 </DIV>
-
-<!--
-<DIV	class="lb_flex-container settings">
-	<DIV	class="lb_flex-item-label">
-		<LABEL	class=	"control-label"
-			for="RFDPort"><TMPL_VAR SETTINGS.LABEL_RFDPORT></LABEL>
-	</DIV>
-	<DIV	class="lb_flex-item-spacer"></DIV>
-	<DIV	class="lb_flex-item">
-		<input width="100%" value="" id="RFDPort" name="RFDPort" type="text" class="textfield" 
-		data-validation-rule="special:number-min-max-value:1:65000" data-validation-error-msg="<TMPL_VAR SETTINGS.MSG_VALINVALID_PORT>">
-	</DIV>
-	<DIV	class="lb_flex-item-spacer"></DIV>
-	<DIV	class="lb_flex-item-help hint">
-		<TMPL_VAR SETTINGS.HINT_RFDPORT>
-	</DIV>
-	<DIV	class="lb_flex-item-spacer"></DIV>
-</DIV>
--->
 
 <DIV	class="lb_flex-container settings">
 	<DIV	class="lb_flex-item-label">
@@ -218,8 +214,8 @@
 <script>
 
 // Validation
-validate_enable('#RFDPort');
 validate_enable('#HM2MQTTPort');
+validate_enable('#HM2MQTTPrefix');
 
 var cfg;
 
@@ -286,13 +282,18 @@ function update_pids()
 		} else {
 			$("#hm2mqttstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_HM2MQTT_NOTRUNNING>");
 		}
+		if(resp.pids.hmserver != null) {
+			$("#hmserverstate").attr("style", "color:green").html("<TMPL_VAR SETTINGS.MSG_HMSERVER_RUNNING> (PID "+resp.pids.hmserver+")");
+		} else {
+			$("#hmserverstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_HMSERVER_NOTRUNNING>");
+		}
 		
 	})
 	.fail(function(resp) {
 		$("#rfdstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_FAILED_PID>");
 		$("#hm2mqttstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_FAILED_PID>");
-		
-	  })
+		$("#hmserverstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_FAILED_PID>");
+	})
 	.always(function(resp) {
 		console.log( "ajax_post", "finished", resp );
 
