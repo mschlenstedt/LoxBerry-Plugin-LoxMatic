@@ -8,6 +8,7 @@ HM_HMRF_DEV=""
 HM_HMRF_DEVNODE=""
 HM_HMIP_DEV=""
 HM_HMIP_DEVNODE=""
+HM_KERNEL=$(uname -r)
 
 # Kill existing RFD
 if pgrep -f bin/rfd > /dev/null 2>&1 ; then
@@ -130,7 +131,7 @@ fi
 # Query RF Parameters
 #
 
-# Libs for /eq3configcmd
+# Libs for eq3configcmd
 export HM_HOME=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3
 export LD_LIBRARY_PATH=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/LinuxBasis/lib/:$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/RFD/lib
 
