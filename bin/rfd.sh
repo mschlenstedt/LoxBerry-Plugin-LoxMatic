@@ -26,8 +26,7 @@ FILENAME=REPLACELBPLOGDIR/rfd.log
 APPEND=1
 LOGSTART "RFD daemon started."
 LOGOK "RFD daemon started."
-LOGINF "This is kernel $HM_KERNEL"
-cat REPLACELBPCONFIGDIR/hm_env > REPLACELBPLOGDIR/rfd.log
+cat REPLACELBPCONFIGDIR/hm_env >> REPLACELBPLOGDIR/rfd.log
 # skip this startup if not in normal mode
 if [[ "${HM_MODE}" != "NORMAL" ]]; then
 	LOGERR "HM environment was not started successfully"

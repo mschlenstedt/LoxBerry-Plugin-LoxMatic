@@ -5,6 +5,9 @@ if [ "$UID" -ne 0 ]; then
 	exit
 fi
 
+# Source HM environment
+[[ -r REPLACELBPCONFIGDIR/hm_env ]] && . REPLACELBPCONFIGDIR/hm_env
+
 export HM_HOME=REPLACELBPDATADIR/occu/arm-gnueabihf/packages-eQ-3/RFD
 export LD_LIBRARY_PATH=$HM_HOME/lib
 
@@ -23,6 +26,13 @@ FILENAME=REPLACELBPLOGDIR/multimacd.log
 APPEND=1
 LOGSTART "multimac daemon started."
 LOGOK "multimac daemon started."
+cat REPLACELBPCONFIGDIR/hm_env >> REPLACELBPLOGDIR/multimacd.log
+# skip this startup if not in normal mode
+if [[ "${HM_MODE}" != "NORMAL" ]]; then
+	LOGERR "HM environment was not started successfully"
+	LOGEND
+	exit 1
+fi
 LOGEND
 
 # Loglevel
@@ -32,6 +42,9 @@ if [ "$DEBUG" = "true" ] || [ "$DEBUG" = "1" ]; then
 else
 	LEVEL="2"
 fi
+
+# Patch config
+sed -i 's|^Coprocessor Device Path = /dev/.*$|Coprocessor Device Path = ${HM_HOST_GPIO_UART}|' REPLACELBPCONFIGDIR/multimacd.conf
 
 # Start multimacd
 $HM_HOME/bin/multimacd -d -l $LEVEL -f REPLACELBPCONFIGDIR/multimacd.conf > /dev/null 2>&1
