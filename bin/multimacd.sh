@@ -44,7 +44,7 @@ else
 fi
 
 # Patch config
-sed -i 's|^Coprocessor Device Path = /dev/.*$|Coprocessor Device Path = ${HM_HOST_GPIO_UART}|' REPLACELBPCONFIGDIR/multimacd.conf
+sed -i "s|^Coprocessor Device Path = .*$|Coprocessor Device Path = ${HM_HOST_GPIO_UART}|" REPLACELBPCONFIGDIR/multimacd.conf
 
 # Start multimacd
 $HM_HOME/bin/multimacd -d -l $LEVEL -f REPLACELBPCONFIGDIR/multimacd.conf > /dev/null 2>&1
