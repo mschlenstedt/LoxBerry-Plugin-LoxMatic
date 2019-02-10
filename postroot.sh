@@ -82,4 +82,12 @@ echo "<INFO> Disabling serial console in /boot/cmdline.txt"
 /bin/sed -i /boot/cmdline.txt -e "s/console=ttyAMA0,[0-9]\+ //"
 /bin/sed -i /boot/cmdline.txt -e "s/console=serial0,[0-9]\+ //"
 
+echo "<INFO> Installing Kernel Modules"
+if [[ -e $PDATA/kernel/$(uname -r) ]]; then
+	mkdir -v -p /lib/modules/$(uname -r)/extra
+	cp -v $PDATA/kernel/$(uname -r)/* /lib/modules/$(uname -r)/extra
+else 
+	echo "<ERROR> Do not have any kernel modules for $(uname -r). The Plugin will not work without kernel modules."
+fi
+
 exit 0
