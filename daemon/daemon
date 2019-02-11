@@ -141,7 +141,7 @@ if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
 
 	# use eq3configcmd to query for the default rf address and if it is empty
 	# or 0x00ffff there is either no HM-MOD-RPI-PCB or it is a RPI-RF-MOD
-	RF_ADDRESS=$($HM_HOME/bin/eq3configcmd read-default-rf-address -f ${HM_HOST_GPIO_UART} -h 2>&1 | grep "^0x" | tr -d '[:space:]')
+	RF_ADDRESS=$($HM_HOME/LinuxBasis/bin/eq3configcmd read-default-rf-address -f ${HM_HOST_GPIO_UART} -h 2>&1 | grep "^0x" | tr -d '[:space:]')
 	if [[ -n "${RF_ADDRESS}" ]] && [[ "${RF_ADDRESS}" != "0x00ffff" ]]; then
 		RF_SGTIN=$($HM_HOME/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -t HM-MOD-UART -c -sg 2>&1 | sed -n 's/.*SGTIN: \([0-9A-Fa-f]\{24\}\).*/\1/p')
 		RF_SERIAL=$($HM_HOME/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -t HM-MOD-UART -c -se 2>&1 | grep "SerialNumber:" | cut -d' ' -f5 | tr -d '[:space:]')

@@ -44,22 +44,18 @@ ln -sv $PCONFIG/rsyslog-multimacd.conf /etc/rsyslog.d/40-$PDIR-multimacd.conf
 systemctl restart rsyslog.service
 
 echo "<INFO> Configuring serial interface..."
-if ! cat /boot/config.txt | grep -qe "^core_freq="; then
-	echo "<INFO> Adding core_freq=250 to /boot/config.txt"
-	echo "core_freq=250" >> /boot/config.txt
+if cat /boot/config.txt | grep -qe "^core_freq="; then
+	echo "<INFO> Removing core_freq= from /boot/config.txt"
+	/bin/sed -i 's|$core_freq=|#core_freq=|g' /boot/config.txt
 else
-	echo "<INFO> Replacing core_freq with core_freq=250 in /boot/config.txt"
-	/bin/sed -i 's#core_freq=\(.*\)#core_freq=250#g' /boot/config.txt
-	/bin/sed -i 's#core_freq="\(.*\)"#core_freq=250#g' /boot/config.txt
+	echo "<INFO> core_freq= not found in /boot/config.txt"
 fi
 
-if ! cat /boot/config.txt | grep -qe "^init_uart_clock="; then
-	echo "<INFO> Adding init_uart_clock=48000000 to /boot/config.txt"
-	echo "init_uart_clock=48000000" >> /boot/config.txt
+if cat /boot/config.txt | grep -qe "^init_uart_clock="; then
+	echo "<INFO> Removing init_uart_clock= from /boot/config.txt"
+	/bin/sed -i 's|$init_uart_clock=|#init_uart_clock=|g' /boot/config.txt
 else
-	echo "<INFO> Replacing init_uart_clock with init_uart_clock=48000000 in /boot/config.txt"
-	/bin/sed -i 's#init_uart_clock=\(.*\)#init_uart_clock=48000000#g' /boot/config.txt
-	/bin/sed -i 's#init_uart_clock="\(.*\)"#init_uart_clock=48000000#g' /boot/config.txt
+	echo "<INFO> init_uart_clock= not found in /boot/config.txt"
 fi
 
 if ! cat /boot/config.txt | grep -qe "^enable_uart="; then
@@ -86,6 +82,7 @@ echo "<INFO> Installing Kernel Modules"
 if [[ -e $PDATA/kernel/$(uname -r) ]]; then
 	mkdir -v -p /lib/modules/$(uname -r)/extra
 	cp -v $PDATA/kernel/$(uname -r)/* /lib/modules/$(uname -r)/extra
+	depmod -a
 else 
 	echo "<ERROR> Do not have any kernel modules for $(uname -r). The Plugin will not work without kernel modules."
 fi
