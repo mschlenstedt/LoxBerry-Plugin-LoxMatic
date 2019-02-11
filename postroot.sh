@@ -22,9 +22,6 @@ PBIN=$LBPBIN/$PDIR
 
 echo "<INFO> Installation as root user started."
 
-echo "<INFO> Stopping any running instance of RFD..."
-killall rfd
-
 echo "<INFO> Preparing OCCU..."
 mkdir -v /etc/config
 rm -rv /etc/config/firmware
