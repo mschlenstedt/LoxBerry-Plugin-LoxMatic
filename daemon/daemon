@@ -87,11 +87,20 @@ fi
 #
 
 # set default HM_HOST_GPIO_UART
+if [[ -c /dev/raw-uart ]]; then
+	HM_HOST_GPIO_UART="/dev/raw-uart"
+else
+	if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
+		HM_HOST_GPIO_UART="/dev/ttyAMA0"
+	else
+		HM_HOST_GPIO_UART="/dev/ttyS0"
+	fi
+fi
+
+# Set correct reset GPIO PIN
 if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
-	HM_HOST_GPIO_UART="/dev/ttyAMA0"
 	HM_HOST_GPIO_RESET=18  # GPIO18/GPIO.1 (pin 12)
 else
-	HM_HOST_GPIO_UART="/dev/ttyS0"
 	HM_HOST_GPIO_RESET=""
 fi
 
@@ -100,15 +109,8 @@ if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
    [[ "${HM_HMIP_DEV}" == "HM-MOD-RPI-PCB" ]] ||
    [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
    [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
-	if [[ -c /dev/raw-uart ]];  then
-		HM_HMRF_DEVNODE="/dev/raw-uart"
-		HM_HMIP_DEVNODE="/dev/raw-uart"
-	else
-		# if no raw uart device is present we try to use the
-		# hardware specific tty device
-		HM_HMRF_DEVNODE="${HM_HOST_GPIO_UART}"
-		HM_HMIP_DEVNODE="${HM_HOST_GPIO_UART}"
-	fi
+	HM_HMRF_DEVNODE="${HM_HOST_GPIO_UART}"
+	HM_HMIP_DEVNODE="${HM_HOST_GPIO_UART}"
 fi
 
 # also set tty device to low_latency mode (if possible)
