@@ -226,6 +226,11 @@ if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]];  then
 	REPLACELBPBINDIR/rfd.sh > /dev/null 2>&1
 fi
 
+# Should HMServer be started
+if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
+	REPLACELBPBINDIR/hmserver.sh > /dev/null 2>&1
+fi
+
 # Should HM2MQTT be started
 if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 	sudo -n -u loxberry REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1

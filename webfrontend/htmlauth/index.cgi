@@ -231,9 +231,9 @@ sub settings_form
 
 sub pids 
 {
-	$pids{'rfd'} = trim(`pgrep -f bin/rfd`) ;
+	$pids{'rfd'} = trim(`pgrep -f rfd`) ;
 	$pids{'hm2mqtt'} = trim(`pgrep -f hm2mqtt/index.js`) ;
-	$pids{'hmserver'} = trim(`pgrep -f HMServer/HMIPServer.jar`) ;
+	$pids{'hmserver'} = trim(`pgrep -f HMIPServer.jar`) ;
 }	
 
 sub cleannamesfile
