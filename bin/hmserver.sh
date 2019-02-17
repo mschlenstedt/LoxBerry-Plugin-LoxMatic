@@ -54,7 +54,7 @@ HM_SERVER_ARGS="REPLACELBPCONFIGDIR/crRFD.conf REPLACELBPCONFIGDIR/HMServer.conf
 
 DEBUG=$(jq -r '.Debug' REPLACELBPCONFIGDIR/loxmatic.json)
 if [ "$DEBUG" = "true" ] || [ "$DEBUG" = "1" ]; then
-	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://REPLACELBPCONFIGDIR/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} >> REPLACELBPLOGDIR/hmserver.log 2>&1 &
+	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://REPLACELBPCONFIGDIR/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} >> REPLACELBPLOGDIR/hmserver.log &
 else
-	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://REPLACELBPCONFIGDIR/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} > /dev/null 2>&1 &
+	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://REPLACELBPCONFIGDIR/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} > /dev/null &
 fi
