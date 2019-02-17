@@ -17,6 +17,13 @@ if pgrep -f bin/rfd > /dev/null 2>&1 ; then
 	pkill -9 -f bin/rfd
 fi
 
+# Kill existing HMServer
+if pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
+	pkill -f HMIPServer.jar
+	sleep 0.1
+	pkill -9 -f HMIPServer.jar
+fi
+
 # Kill existing multimacd
 if pgrep -f bin/multimacd > /dev/null 2>&1 ; then
 	pkill -f bin/multimacd
