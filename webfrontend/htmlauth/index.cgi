@@ -203,7 +203,7 @@ sub settings_form
 		}
 		$cfg->{EnableHM2MQTT} = $q->{EnableHM2MQTT};
 		$cfg->{EnableRFD} = $q->{EnableRFD};
-		$cfg->{EnableHMIPServer} = $q->{EnableHMIPServer};
+		$cfg->{EnableHMIPSERVER} = $q->{EnableHMIPSERVER};
 		$cfg->{HM2MQTTPort} = $q->{HM2MQTTPort};
 		$cfg->{HM2MQTTPrefix} = $q->{HM2MQTTPrefix};
 		$jsonobj->write();
