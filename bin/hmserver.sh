@@ -30,7 +30,7 @@ if [[ "${HM_MODE}" != "NORMAL" ]]; then
 	LOGEND
 	exit 1
 fi
-if [[ -n "${HM_HMIP_DEV}" ]]; then
+if [[ ! -n "${HM_HMIP_DEV}" ]]; then
 	LOGERR "No HMIP device configured."
 	LOGEND
 	exit 1
