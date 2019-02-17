@@ -228,7 +228,7 @@ fi
 
 # Should HMServer be started
 if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
-	REPLACELBPBINDIR/hmserver.sh > /dev/null 2>&1
+	sudo -n -u loxberry REPLACELBPBINDIR/hmserver.sh > /dev/null 2>&1
 fi
 
 # Should HM2MQTT be started

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ "$UID" -ne 0 ]; then
-	echo "This script has to be run as root."
-	exit
-fi
+#if [ "$UID" -ne 0 ]; then
+#	echo "This script has to be run as root."
+#	exit
+#fi
 
 # Source HM environment
 [[ -r REPLACELBPCONFIGDIR/hm_env ]] && . REPLACELBPCONFIGDIR/hm_env
@@ -47,10 +47,14 @@ fi
 
 # make sure the Adapter Port setting is correct
 # when generating /var/etc/crRFD.conf
-sed -e "s|^Adapter\.1\.Port=/dev/.*$|Adapter.1.Port=${HM_SERVER_PORT}|" REPLACELBPCONFIGDIR/crRFD.conf 
+sed -i -e "s|^Adapter\.1\.Port=/dev/.*$|Adapter.1.Port=${HM_SERVER_PORT}|" REPLACELBPCONFIGDIR/crRFD.conf 
 
 HM_SERVER=/opt/HMServer/HMIPServer.jar
 HM_SERVER_ARGS="REPLACELBPCONFIGDIR/crRFD.conf REPLACELBPCONFIGDIR/HMServer.conf"
 
-# Start RFD
-java -- -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://REPLACELBPCONFIGDIR/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS}> /dev/null 2>&1
+DEBUG=$(jq -r '.Debug' REPLACELBPCONFIGDIR/loxmatic.json)
+if [ "$DEBUG" = "true" ] || [ "$DEBUG" = "1" ]; then
+	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://REPLACELBPCONFIGDIR/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} >> REPLACELBPLOGDIR/hmserver.log 2>&1 &
+else
+	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://REPLACELBPCONFIGDIR/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} > /dev/null 2>&1 &
+fi
