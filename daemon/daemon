@@ -10,6 +10,10 @@ HM_HMIP_DEV=""
 HM_HMIP_DEVNODE=""
 HM_KERNEL=$(uname -r)
 
+# Libs for eq3configcmd
+export HM_HOME=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3
+export LD_LIBRARY_PATH=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/LinuxBasis/lib/:$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/RFD/lib
+
 # Create Logfile
 . $LBHOMEDIR/libs/bashlib/loxberry_log.sh
 PACKAGE=loxmatic
@@ -177,7 +181,7 @@ if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
 	# Start Firmware Upgrade
 	if [[ -e "$LBPCONFIG/$PLUGINNAME/do_firmwareupgrade" ]]; then
 		LOGINF "Doing firmware upgrade..."
-		$HM_HOME/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -l 0 -c -t HM-MOD-UART -d $LBPDATA/$PLUGINNAME/occu/firmware/HM-MOD-UART -u >> ${FILENAME} 2>&1
+		${HM_HOME}/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -l 0 -c -t HM-MOD-UART -d $LBPDATA/$PLUGINNAME/occu/firmware/HM-MOD-UART -u >> ${FILENAME} 2>&1
 		rm $LBPCONFIG/$PLUGINNAME/do_firmwareupgrade
 	fi
 fi
@@ -185,10 +189,6 @@ fi
 #
 # Query RF Parameters
 #
-
-# Libs for eq3configcmd
-export HM_HOME=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3
-export LD_LIBRARY_PATH=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/LinuxBasis/lib/:$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/RFD/lib
 
 # 1. query for HM-MOD-RPI-PCB parameters
 if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
