@@ -26,6 +26,8 @@ echo "<INFO> Preparing OCCU..."
 mkdir -v /etc/config
 rm -rv /etc/config/firmware
 ln -sv $PDATA/occu/firmware /etc/config/firmware
+rm -rv /etc/config/InterfacesList.xml
+ln -sv $PCONFIG/InterfacesList.xml /etc/config/InterfacesList.xml
 rm -rv /var/status
 ln -sv /tmp /var/status
 rm -rv /opt/HMServer
