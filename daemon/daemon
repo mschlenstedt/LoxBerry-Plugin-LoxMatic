@@ -10,28 +10,40 @@ HM_HMIP_DEV=""
 HM_HMIP_DEVNODE=""
 HM_KERNEL=$(uname -r)
 
-# Kill existing RFD
+# Create Logfile
+. $LBHOMEDIR/libs/bashlib/loxberry_log.sh
+PACKAGE=loxmatic
+NAME=Daemon
+LOGDIR=$LBPLOG/$PLUGINNAME
+STDERR=1
+LOGSTART "Loxmatic Daemon started."
+
+# Killing existing RFD
+LOGINF "Killing any running RFD instance..."
 if pgrep -f bin/rfd > /dev/null 2>&1 ; then
 	pkill -f bin/rfd
 	sleep 0.1
 	pkill -9 -f bin/rfd
 fi
 
-# Kill existing HMServer
+# Killing existing HMServer
+LOGINF "Killing any running HMSERVER instance..."
 if pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
 	pkill -f HMIPServer.jar
 	sleep 0.1
 	pkill -9 -f HMIPServer.jar
 fi
 
-# Kill existing multimacd
+# Killing existing multimacd
+LOGINF "Killing any running MULTIMACD instance..."
 if pgrep -f bin/multimacd > /dev/null 2>&1 ; then
 	pkill -f bin/multimacd
 	sleep 0.1
 	pkill -9 -f bin/multimacd
 fi
 
-# Kill existing HM2MQTT
+# Killing existing HM2MQTT
+LOGINF "Killing any running HM2MQTT instance..."
 if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
         pkill -f hm2mqtt/index.js
         sleep 0.1
@@ -41,16 +53,25 @@ fi
 #
 # Identify Hardware
 #
+LOGINF "Identifying Homematic Hardware..."
 
 # Load EQ3 / RAW UART kernel modules
-modprobe bcm2835_raw_uart > /dev/null 2>&1
-modprobe eq3_char_loop > /dev/null 2>&1
+LOGINF "Loading Kernel modules..."
+if [[ ! -e "/lib/modules/$(uname -r)/extra/bcm2835_raw_uart.so" ]]; then
+	LOGERR "Cannot find the needed kernel modules. Giving up."
+	LOGEND
+	HM_MODE="ERROR"
+	set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
+	exit 1;
+fi
+modprobe -v bcm2835_raw_uart >> ${FILENAME} 2>&1
+modprobe -v eq3_char_loop >> ${FILENAME} 2>&1
 
 # load the common i2c kernel modules
 if [[ -e REPLACELBCONFIGDIR/is_raspberry.cfg ]];  then
 	modprobe i2c_bcm2835
 fi
-modprobe i2c_dev
+modprobe -v i2c_dev >> ${FILENAME} 2>&1
 
 # check for RX8130-CE RTC clock at 0x32 (Epson RX8130CE) which
 # is the RPI-RF-MOD onboard RTC.
@@ -78,9 +99,11 @@ fi
 # type of the GPIO rf module we assume a RPI-RF-MOD
 # as soon as we have found a rx8130 RTC clock
 if [[ "${HM_RTC}" == "rx8130" ]];  then
+	LOGINF "We found a RTC RX8130. This must be a RPI-RF-MOD Module."
 	HM_HMRF_DEV="RPI-RF-MOD"
 	HM_HMIP_DEV="RPI-RF-MOD"
 else
+	LOGINF "We think you have a HM-MOD-RPI-PCB Module. But we will now check also for USB devices. Please wait."
 	HM_HMRF_DEV="HM-MOD-RPI-PCB"
 	HM_HMIP_DEV="HM-MOD-RPI-PCB"
 fi
@@ -89,25 +112,32 @@ fi
 # Check here for any USB devices
 #
 
+# To be added here...
+
 #
 # Init Hardware
 #
 
 # set default HM_HOST_GPIO_UART
 if [[ -c /dev/raw-uart ]]; then
+	LOGINF "GPIO UART is /dev/raw-uart"
 	HM_HOST_GPIO_UART="/dev/raw-uart"
 else
 	if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
+		LOGINF "GPIO UART is /dev/ttyAMA0"
 		HM_HOST_GPIO_UART="/dev/ttyAMA0"
 	else
+		LOGINF "GPIO UART is /dev/ttyS0"
 		HM_HOST_GPIO_UART="/dev/ttyS0"
 	fi
 fi
 
 # Set correct reset GPIO PIN
 if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
+	LOGINF "GPIO Reset Pin is 18."
 	HM_HOST_GPIO_RESET=18  # GPIO18/GPIO.1 (pin 12)
 else
+	LOGINF "Haven't set a GPIO Reset Pin."
 	HM_HOST_GPIO_RESET=""
 fi
 
@@ -116,17 +146,20 @@ if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
    [[ "${HM_HMIP_DEV}" == "HM-MOD-RPI-PCB" ]] ||
    [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
    [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
+	LOGINF "HMRF dev node is ${HM_HOST_GPIO_UART}, HMIP dev node is ${HM_HOST_GPIO_UART}."
 	HM_HMRF_DEVNODE="${HM_HOST_GPIO_UART}"
 	HM_HMIP_DEVNODE="${HM_HOST_GPIO_UART}"
 fi
 
 # also set tty device to low_latency mode (if possible)
 if [[ -c "${HM_HOST_GPIO_UART}" ]]; then
-	/bin/setserial ${HM_HOST_GPIO_UART} low_latency > /dev/null 2>&1
+	LOGINF "Setting serial port to low latency."
+	/bin/setserial ${HM_HOST_GPIO_UART} low_latency >> ${FILENAME} 2>&1
 fi
 
 # Reset Module
 if [[ -n "${HM_HOST_GPIO_RESET}" ]];  then
+	LOGINF "Resetting Module..."
 	echo ${HM_HOST_GPIO_RESET} > /sys/class/gpio/export
 	echo out > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/direction
 	echo 0 > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/value
@@ -134,6 +167,19 @@ if [[ -n "${HM_HOST_GPIO_RESET}" ]];  then
 	echo 1 > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/value
 	sleep 0.1
 	echo in > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/direction
+fi
+
+# Do Firmware Upgrade after first reboot
+if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
+   [[ "${HM_HMIP_DEV}" == "HM-MOD-RPI-PCB" ]]; then
+
+	# do firmware upgrade after first reboot
+	# Start Firmware Upgrade
+	if [[ -e "$LBPCONFIG/$PLUGINNAME/do_firmwareupgrade" ]] ||
+		LOGINF "Doing firmware upgrade..."
+		$HM_HOME/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -l 0 -c -t HM-MOD-UART -d $LBPDATA/$PLUGINNAME/occu/firmware/HM-MOD-UART -u >> ${FILENAME} 2>&1
+		rm $LBPCONFIG/$PLUGINNAME/do_firmwareupgrade
+	fi
 fi
 
 #
@@ -218,6 +264,9 @@ fi
 # save all HM_ env variables
 set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
 
+LOGINF "This is the HM environment:"
+cat REPLACELBPCONFIGDIR/hm_env >> ${FILENAME}
+
 # What is enabled?
 RFDENABLED=$(jq -r '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)
 HMIPSERVERENABLED=$(jq -r '.EnableHMIPSERVER' REPLACELBPCONFIGDIR/loxmatic.json)
@@ -225,21 +274,25 @@ HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' REPLACELBPCONFIGDIR/loxmatic.json)
 
 # Should multimacd be started: Needed if RFD or HMIPServer should be started
 if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
+	LOGINF "Starting MULTIMACD..."
 	REPLACELBPBINDIR/multimacd.sh > /dev/null 2>&1
 fi
 
 # Should RFD be started
 if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]];  then
+	LOGINF "Starting RFD..."
 	REPLACELBPBINDIR/rfd.sh > /dev/null 2>&1
 fi
 
 # Should HMServer be started
 if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
+	LOGINF "Starting HMSERVER..."
 	REPLACELBPBINDIR/hmserver.sh > /dev/null 2>&1
 fi
 
 # Should HM2MQTT be started
 if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
+	LOGINF "Starting HM2MQTT..."
 	sudo -n -u loxberry REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1
 fi
 
