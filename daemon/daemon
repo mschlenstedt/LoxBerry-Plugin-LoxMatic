@@ -57,7 +57,7 @@ LOGINF "Identifying Homematic Hardware..."
 
 # Load EQ3 / RAW UART kernel modules
 LOGINF "Loading Kernel modules..."
-if [[ ! -e "/lib/modules/$(uname -r)/extra/bcm2835_raw_uart.so" ]]; then
+if [[ ! -e "/lib/modules/$(uname -r)/extra/bcm2835_raw_uart.ko" ]]; then
 	LOGERR "Cannot find the needed kernel modules. Giving up."
 	LOGEND
 	HM_MODE="ERROR"
@@ -175,7 +175,7 @@ if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
 
 	# do firmware upgrade after first reboot
 	# Start Firmware Upgrade
-	if [[ -e "$LBPCONFIG/$PLUGINNAME/do_firmwareupgrade" ]] ||
+	if [[ -e "$LBPCONFIG/$PLUGINNAME/do_firmwareupgrade" ]]; then
 		LOGINF "Doing firmware upgrade..."
 		$HM_HOME/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -l 0 -c -t HM-MOD-UART -d $LBPDATA/$PLUGINNAME/occu/firmware/HM-MOD-UART -u >> ${FILENAME} 2>&1
 		rm $LBPCONFIG/$PLUGINNAME/do_firmwareupgrade
