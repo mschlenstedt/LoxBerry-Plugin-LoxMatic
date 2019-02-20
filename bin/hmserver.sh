@@ -1,5 +1,7 @@
 #!/bin/bash
 
+PLUGINNAME=REPLACELBPPLUGINDIR
+
 #if [ "$UID" -ne 0 ]; then
 #	echo "This script has to be run as root."
 #	exit
@@ -17,7 +19,7 @@ fi
 
 # Create a new entry for the logfile (for logmanager)
 . $LBHOMEDIR/libs/bashlib/loxberry_log.sh
-PACKAGE=loxmatic
+PACKAGE=$PLUGINNAME
 NAME=hmserver
 FILENAME=REPLACELBPLOGDIR/hmserver.log
 APPEND=1

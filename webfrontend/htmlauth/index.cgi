@@ -25,7 +25,7 @@ use warnings;
 use strict;
 
 # Version of this script
-my $version = "0.0.1";
+my $version = "0.0.4.0";
 
 # CGI
 my $cgi = CGI->new;
@@ -114,6 +114,7 @@ sub print_form
 
         $navbar{10}{Name} = $SL{'SETTINGS.LABEL_NAV_SETTINGS'};
         $navbar{10}{URL} = 'index.cgi';
+        $navbar{10}{Notify_Package} = $lbpplugindir;
 
         $navbar{20}{Name} = $SL{'SETTINGS.LABEL_NAV_SNIFFER'};
         $navbar{20}{URL} = 'index.cgi?form=sniffer';
@@ -127,6 +128,7 @@ sub print_form
 
         LoxBerry::Web::lbheader($plugintitle, $helplink, $helptemplate);
 
+	print LoxBerry::Log::get_notifications_html($lbpplugindir);
         print $template->output();
 
         LoxBerry::Web::lbfooter();
@@ -142,6 +144,7 @@ sub settings_form
 	# Save config
 	if ( $saveformdata ) {
 
+		my $error = 0;
 		my $uploadfile = $cgi->param('NamesFile');
 		#print STDERR "The upload file is $uploadfile.\n";
 		if ($uploadfile) {
@@ -157,10 +160,10 @@ sub settings_form
 			#print STDERR "The upload file is $filesize kB.\n";
 
 			# If it's larger than allowed...
-			#if ($filesize > $max_filesize) {
-				#$error = $SL{'PLUGININSTALL.UI_INSTALL_ERR_MAX_FILESIZE'};
-				#&error;
-				#}
+			if ($filesize > $max_filesize) {
+				notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_FILESIZETOBIG'}, "error");
+				$error = 1;
+			}
 
 			# json ending is important for nodejs
 			my $savefile;
@@ -171,27 +174,37 @@ sub settings_form
 			}
 
 			# Save file
-			open (FILE, ">/tmp/$savefile");
-			while (read ($uploadfile, my $Buffer, 1024)) {
-				    print FILE $Buffer;
+			if (!$error) {
+				open (FILE, ">/tmp/$savefile");
+				while (read ($uploadfile, my $Buffer, 1024)) {
+					    print FILE $Buffer;
+				}
+				close FILE;
 			}
-			close FILE;
 
 			# Test if we have a valid json
-			my $jsontest = LoxBerry::JSON->new();
-			my $testcfg = $jsontest->open(filename => "/tmp/$savefile");
-			if (!$testcfg) {
-				#print STDERR "$savefile is not a valid json file.\n";
+			if (!$error) {
+				my $jsontest = LoxBerry::JSON->new();
+				my $testcfg = $jsontest->open(filename => "/tmp/$savefile");
+				if (!$testcfg) {
+					notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_NOTJSON'}, "error");
+					$error = 1;
+				} else {
+					#print STDERR "$savefile is a valid json file.\n";
+					if ($cfg->{NamesFile}) {
+						system ("rm $lbpconfigdir/$cfg->{NamesFile}");
+					}
+					system ("mv /tmp/$savefile $lbpconfigdir");
+					$cfg->{NamesFile} = "$lbpconfigdir/$savefile";
+				}
+			}
+
+			# If an error occurred, do not use the namesfile
+			if ($error) {
 				$cfg->{NamesFile} = "";
 				system ("rm /tmp/$savefile");
-			} else {
-				#print STDERR "$savefile is a valid json file.\n";
-				if ($cfg->{NamesFile}) {
-					system ("rm $lbpconfigdir/$cfg->{NamesFile}");
-				}
-				system ("mv /tmp/$savefile $lbpconfigdir");
-				$cfg->{NamesFile} = "$lbpconfigdir/$savefile";
 			}
+
 		}
 
 		$cfg->{BrokerPassword} = $q->{BrokerPassword};
