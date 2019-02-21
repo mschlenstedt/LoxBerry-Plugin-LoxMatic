@@ -25,7 +25,7 @@ use warnings;
 use strict;
 
 # Version of this script
-my $version = "0.0.4.0";
+my $version = "0.0.4.1";
 
 # CGI
 my $cgi = CGI->new;
@@ -218,6 +218,7 @@ sub settings_form
 		$cfg->{EnableRFD} = $q->{EnableRFD};
 		$cfg->{EnableHMIPSERVER} = $q->{EnableHMIPSERVER};
 		$cfg->{HM2MQTTPort} = $q->{HM2MQTTPort};
+		$cfg->{HM2MQTTPortHmIp} = $q->{HM2MQTTPortHmIp};
 		$cfg->{HM2MQTTPrefix} = $q->{HM2MQTTPrefix};
 		$jsonobj->write();
 

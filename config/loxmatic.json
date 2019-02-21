@@ -7,6 +7,7 @@
    "BrokerUsername" : "loxberry",
    "BrokerPassword" : "loxberry",
    "HM2MQTTPort" : "2127",
+   "HM2MQTTPortHmIp" : "2126",
    "HM2MQTTPrefix" : "hm",
    "NamesFile" : ""
 }

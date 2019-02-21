@@ -158,6 +158,23 @@
 <DIV	class="lb_flex-container settings">
 	<DIV	class="lb_flex-item-label">
 		<LABEL	class=	"control-label"
+			for="HM2MQTTPort"><TMPL_VAR SETTINGS.LABEL_HM2MQTTPORTHMIP></LABEL>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item">
+		<input width="100%" value="" id="HM2MQTTPortHmIp" name="HM2MQTTPortHmIp" type="text" class="textfield" 
+		data-validation-rule="special:number-min-max-value:1:65000" data-validation-error-msg="<TMPL_VAR SETTINGS.MSG_VALINVALID_PORT>">
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item-help hint">
+		<TMPL_VAR SETTINGS.HINT_HM2MQTTPORTHMIP>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+</DIV>
+
+<DIV	class="lb_flex-container settings">
+	<DIV	class="lb_flex-item-label">
+		<LABEL	class=	"control-label"
 			for="HM2MQTTPrefix"><TMPL_VAR SETTINGS.LABEL_HM2MQTTPREFIX></LABEL>
 	</DIV>
 	<DIV	class="lb_flex-item-spacer"></DIV>

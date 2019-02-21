@@ -35,6 +35,7 @@ fi
 
 # MQTT Parameters
 PORT=$(jq -r '.HM2MQTTPort' REPLACELBPCONFIGDIR/loxmatic.json)
+PORTHMIP=$(jq -r '.HM2MQTTPortHmIp' REPLACELBPCONFIGDIR/loxmatic.json)
 BROKER=$(jq -r '.BrokerAddress' REPLACELBPCONFIGDIR/loxmatic.json)
 USERNAME=$(jq -r '.BrokerUsername' REPLACELBPCONFIGDIR/loxmatic.json)
 PASSWORD=$(jq -r '.BrokerPassword' REPLACELBPCONFIGDIR/loxmatic.json)
@@ -42,6 +43,12 @@ if [[ $USERNAME != "" ]]; then
         CREDS="$USERNAME:$PASSWORD@"
 else
         CREDS=""
+fi
+if [[ $PORT == "" ]]; then
+        PORT="2026"
+fi
+if [[ $PORTHMIP == "" ]]; then
+        PORT="2027"
 fi
 NAMES=$(jq -r '.NamesFile' REPLACELBPCONFIGDIR/loxmatic.json)
 if [ -f $NAMES ] && [[ $NAMES != "" ]]; then
@@ -55,4 +62,4 @@ if [ $PREFIX = "" ]; then
 fi
 
 # Start HM2MQTT
-REPLACELBPDATADIR/hm2mqtt/index.js -b $PORT -d -n $PREFIX -m mqtt://$CREDS$BROKER -a 127.0.0.1 -v $LEVEL $JSONNAME >> REPLACELBPLOGDIR/hm2mqtt.log 2>&1 &
+REPLACELBPDATADIR/hm2mqtt/index.js -b $PORT -l $PORTHMIP -d -n $PREFIX -m mqtt://$CREDS$BROKER -a 127.0.0.1 -v $LEVEL $JSONNAME >> REPLACELBPLOGDIR/hm2mqtt.log 2>&1 &
