@@ -47,12 +47,12 @@ fi
 if [[ ! $PORT =~ ^[0-9]+$ ]]; then
         PORT="2027"
 	jq ".HM2MQTTPort = $PORT" REPLACELBPCONFIGDIR/loxmatic.json > REPLACELBPCONFIGDIR/loxmatic.json.new
-	mv REPLACELBPCONFIGDIR/loxmatic.json.new REPLACELBPCONFIGDIR/loxmatic.json > dev/null 2>&1
+	mv REPLACELBPCONFIGDIR/loxmatic.json.new REPLACELBPCONFIGDIR/loxmatic.json > /dev/null 2>&1
 fi
 if [[ ! $PORTHMIP =~ ^[0-9]+$ ]]; then
         PORTHMIP="2026"
 	jq ".HM2MQTTPortHmIp = $PORTHMIP" REPLACELBPCONFIGDIR/loxmatic.json > REPLACELBPCONFIGDIR/loxmatic.json.new
-	mv REPLACELBPCONFIGDIR/loxmatic.json.new REPLACELBPCONFIGDIR/loxmatic.json > dev/null 2>&1
+	mv REPLACELBPCONFIGDIR/loxmatic.json.new REPLACELBPCONFIGDIR/loxmatic.json > /dev/null 2>&1
 fi
 NAMES=$(jq -r '.NamesFile' REPLACELBPCONFIGDIR/loxmatic.json)
 if [ -f $NAMES ] && [[ $NAMES != "" ]]; then
