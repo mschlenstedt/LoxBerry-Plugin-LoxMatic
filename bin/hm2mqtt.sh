@@ -44,11 +44,11 @@ if [[ $USERNAME != "" ]]; then
 else
         CREDS=""
 fi
-if [[ $PORT == "" ]] || [[ $PORT == "true" ]]; then
+if [[ ! $PORT =~ ^[0-9]+$ ]]; then
         PORT="2026"
 fi
-if [[ $PORTHMIP == "" ]] || [[ $PORTHMIP == "true" ]]; then
-        PORT="2027"
+if [[ ! $PORTHMIP =~ ^[0-9]+$ ]]; then
+        PORTHMIP="2027"
 fi
 NAMES=$(jq -r '.NamesFile' REPLACELBPCONFIGDIR/loxmatic.json)
 if [ -f $NAMES ] && [[ $NAMES != "" ]]; then
