@@ -281,24 +281,72 @@ HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' REPLACELBPCONFIGDIR/loxmatic.json)
 if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 	LOGINF "Starting MULTIMACD..."
 	REPLACELBPBINDIR/multimacd.sh > /dev/null 2>&1
+	STEPS=150
+	for i in $(seq 1 ${STEPS}); do
+		sleep 1
+		echo -n "."
+		if pgrep -f bin/multimacd > /dev/null 2>&1 ; then
+			echo "OK"
+			break
+		fi
+		if [[ ${i} -eq ${STEPS} ]]; then
+			echo "ERROR"
+		fi
+	done
 fi
 
 # Should RFD be started
 if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]];  then
 	LOGINF "Starting RFD..."
 	REPLACELBPBINDIR/rfd.sh > /dev/null 2>&1
+	STEPS=150
+	for i in $(seq 1 ${STEPS}); do
+		sleep 1
+		echo -n "."
+		if pgrep -f bin/rfd > /dev/null 2>&1 ; then
+			echo "OK"
+			break
+		fi
+		if [[ ${i} -eq ${STEPS} ]]; then
+			echo "ERROR"
+		fi
+	done
 fi
 
 # Should HMServer be started
 if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 	LOGINF "Starting HMSERVER..."
 	REPLACELBPBINDIR/hmserver.sh > /dev/null 2>&1
+	STEPS=150
+	for i in $(seq 1 ${STEPS}); do
+		sleep 1
+		echo -n "."
+		if pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
+			echo "OK"
+			break
+		fi
+		if [[ ${i} -eq ${STEPS} ]]; then
+			echo "ERROR"
+		fi
+	done
 fi
 
 # Should HM2MQTT be started
 if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 	LOGINF "Starting HM2MQTT..."
 	sudo -n -u loxberry REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1
+	STEPS=150
+	for i in $(seq 1 ${STEPS}); do
+		sleep 1
+		echo -n "."
+		if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
+			echo "OK"
+			break
+		fi
+		if [[ ${i} -eq ${STEPS} ]]; then
+			echo "ERROR"
+		fi
+	done
 fi
 
 # output some status information
