@@ -317,6 +317,11 @@ fi
 if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 	LOGINF "Starting HMSERVER..."
 	REPLACELBPBINDIR/hmserver.sh > /dev/null 2>&1
+	STEPS=10 # We need 10 secs tto get the interface up
+	for i in $(seq 1 ${STEPS}); do
+		sleep 1
+		echo -n "."
+	done
 	STEPS=150
 	for i in $(seq 1 ${STEPS}); do
 		sleep 1
