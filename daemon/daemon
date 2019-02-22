@@ -303,7 +303,8 @@ if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]];  then
 	for i in $(seq 1 ${STEPS}); do
 		sleep 1
 		echo -n "."
-		if pgrep -f bin/rfd > /dev/null 2>&1 ; then
+		if lsof -Pi :2001 -sTCP:LISTEN -t > /dev/null 2>&1 ; then
+		#if pgrep -f bin/rfd > /dev/null 2>&1 ; then
 			echo "OK"
 			break
 		fi
@@ -317,16 +318,12 @@ fi
 if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 	LOGINF "Starting HMSERVER..."
 	REPLACELBPBINDIR/hmserver.sh > /dev/null 2>&1
-	STEPS=10 # We need 10 secs tto get the interface up
-	for i in $(seq 1 ${STEPS}); do
-		sleep 1
-		echo -n "."
-	done
 	STEPS=150
 	for i in $(seq 1 ${STEPS}); do
 		sleep 1
 		echo -n "."
-		if pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
+		if lsof -Pi :2010 -sTCP:LISTEN -t > /dev/null 2>&1 ; then
+		#if pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
 			echo "OK"
 			break
 		fi
