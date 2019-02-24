@@ -25,7 +25,7 @@ use warnings;
 use strict;
 
 # Version of this script
-my $version = "0.0.4.1";
+my $version = "0.1.0";
 
 # CGI
 my $cgi = CGI->new;
@@ -223,7 +223,7 @@ sub settings_form
 		$jsonobj->write();
 
 		# Kill / Restart
-		system ("sudo $lbhomedir/system/daemons/plugins/$lbpplugindir");
+		system ("sudo $lbhomedir/system/daemons/plugins/$lbpplugindir short");
 
 	}
 
