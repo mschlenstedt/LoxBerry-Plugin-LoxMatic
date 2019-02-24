@@ -74,10 +74,11 @@ if [[ ! -e "/lib/modules/$(uname -r)/extra/bcm2835_raw_uart.ko" ]]; then
 fi
 modprobe -v bcm2835_raw_uart >> ${FILENAME} 2>&1
 modprobe -v eq3_char_loop >> ${FILENAME} 2>&1
+rmmod -v rtc_ds1307 >> ${FILENAME} 2>&1
 
 # load the common i2c kernel modules
 if [[ -e REPLACELBCONFIGDIR/is_raspberry.cfg ]];  then
-	modprobe i2c_bcm2835
+	modprobe i2c_bcm2835 >> ${FILENAME} 2>&1
 fi
 modprobe -v i2c_dev >> ${FILENAME} 2>&1
 
@@ -86,7 +87,7 @@ modprobe -v i2c_dev >> ${FILENAME} 2>&1
 i2cget -y 1 0x32 0x32 2>/dev/null >/dev/null
 if [[ $? -eq 0 ]]; then
 	i2cset -y 1 0x32 0x1f 0x30 >/dev/null # turn on coldcap charging
-	modprobe i2c:rx8130
+	modprobe i2c:rx8130 >> ${FILENAME} 2>&1
 	if [[ $? -eq 0 ]]; then
 		HM_RTC="rx8130"
 		[[ -c /dev/rtc0 ]] || echo rx8130 0x32 >/sys/class/i2c-dev/i2c-1/device/new_device
@@ -187,6 +188,18 @@ if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
 		notify $PLUGINNAME daemon "Your Homematic Module was updated to the latest firmware." > /dev/null 2>&1
 		LOGINF "Doing firmware upgrade..."
 		${HM_HOME}/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -l 0 -c -t HM-MOD-UART -d $LBPDATA/$PLUGINNAME/occu/firmware/HM-MOD-UART -u >> ${FILENAME} 2>&1
+		rm $LBPCONFIG/$PLUGINNAME/do_firmwareupgrade
+	fi
+fi
+if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
+   [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
+
+	# do firmware upgrade after first reboot
+	# Start Firmware Upgrade
+	if [[ -e "$LBPCONFIG/$PLUGINNAME/do_firmwareupgrade" ]]; then
+		notify $PLUGINNAME daemon "Your Homematic Module was updated to the latest firmware." > /dev/null 2>&1
+		LOGINF "Doing firmware upgrade..."
+		/usr/bin/java -Dgnu.io.rxtx.SerialPorts=${HM_HOST_GPIO_UART} -jar /opt/HmIP/hmip-copro-update.jar -p ${HM_HOST_GPIO_UART} -o -f $LBPDATA/$PLUGINNAME/occu/firmware/RPI-RF-MOD/dualcopro_update_blhmip-*.eq3 >> ${FILENAME} 2>&1
 		rm $LBPCONFIG/$PLUGINNAME/do_firmwareupgrade
 	fi
 fi
