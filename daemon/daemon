@@ -322,12 +322,13 @@ if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERE
 		sleep 1
 		echo -n "."
 		if pgrep -f bin/multimacd > /dev/null 2>&1 ; then
-			echo "OK"
+			LOGOK "OK"
 			MULTIMACDPID=$(pgrep -f bin/multimacd)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
-			echo "ERROR"
+			LOGERR "ERROR"
+			MULTIMACDPID="None"
 		fi
 	done
 fi
@@ -342,12 +343,13 @@ if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]];  then
 		echo -n "."
 		if lsof -Pi :2001 -sTCP:LISTEN -t > /dev/null 2>&1 ; then
 		#if pgrep -f bin/rfd > /dev/null 2>&1 ; then
-			echo "OK"
+			LOGOK "OK"
 			RFDPID=$(pgrep -f bin/rfd)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
-			echo "ERROR"
+			LOGERR "ERROR"
+			RFDPID="None"
 		fi
 	done
 fi
@@ -362,12 +364,13 @@ if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  the
 		echo -n "."
 		if lsof -Pi :2010 -sTCP:LISTEN -t > /dev/null 2>&1 ; then
 		#if pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
-			echo "OK"
+			LOGOK "OK"
 			HMSERVERPID=$(pgrep -f HMIPServer.jar)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
-			echo "ERROR"
+			LOGERR "ERROR"
+			HMSERVERPID="None"
 		fi
 	done
 fi
@@ -381,12 +384,13 @@ if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 		sleep 1
 		echo -n "."
 		if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
-			echo "OK"
+			LOGOK "OK"
 			HM2MQTTPID=$(pgrep -f hm2mqtt/index.js)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
-			echo "ERROR"
+			LOGERR "ERROR"
+			HM2MQTTPID="None"
 		fi
 	done
 fi
@@ -417,19 +421,15 @@ cat REPLACELBPCONFIGDIR/hm_env >> ${FILENAME}
 start_hm
 
 # output some status information
-echo -n "BidCos-RF: "
-[[ -n "${HM_HMRF_DEV}" ]] && echo -n "${HM_HMRF_DEV}, " || echo -n "None, "
-echo -n "HmIP: "
-[[ -n "${HM_HMIP_DEV}" ]] && echo -n "${HM_HMIP_DEV}, " || echo -n "None, "
-echo -n "Multimacd: "
-[[ -n "${MULTIMACDPID}" ]] && echo -n "${MULTIMACDPID}, " || echo -n "None, "
-echo -n "RFD: "
-[[ -n "${RFDPID}" ]] && echo -n "${RFDPID}, " || echo -n "None, "
-echo -n "HMIPServer: "
-[[ -n "${HMSERVERPID}" ]] && echo -n "${HMSERVERPID}, " || echo -n "None, "
-echo -n "HM2MQTT: "
-[[ -n "${HM2MQTTPID}" ]] && echo -n "${HM2MQTTPID}, " || echo -n "None, "
-echo "OK"
+[[ ! -n "${HM_HMRF_DEV}" ]] && HM_HMRF_DEV="None"
+[[ ! -n "${HM_HMIP_DEV}" ]] && HM_HMIP_DEV="None"
+LOGINF "BidCos-RF: ${HM_HMRF_DEV}"
+LOGINF "HmIP: ${HM_HMIP_DEV}"
+LOGINF "Multimacd: ${MULTIMACDPID}"
+LOGINF "RFD: ${RFDPID}"
+LOGINF "HMIPServer: ${HMSERVERPID}"
+LOGINF "HM2MQTT: ${HM2MQTTPID}"
+LOGEND "Exit."
 
 chown -R loxberry:loxberry REPLACELBPCONFIGDIR
 
