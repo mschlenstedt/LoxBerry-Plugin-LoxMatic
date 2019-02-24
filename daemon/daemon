@@ -405,9 +405,11 @@ kill_hm
 
 # Use shortmode if not during boot up
 if [[ $1 == "short" ]]; then
+	LOGINF "We are in short mode. No hardware initialisation will be done."
 	# Source HM environment
 	[[ -r REPLACELBPCONFIGDIR/hm_env ]] && . REPLACELBPCONFIGDIR/hm_env
 else
+	LOGINF "We are in long mode. Hardware will be initialized."
 	identify_hw
 	init_hw
 	# save all HM_ env variables
