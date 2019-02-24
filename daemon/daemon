@@ -25,6 +25,42 @@ LOGDIR=$LBPLOG/$PLUGINNAME
 STDERR=1
 LOGSTART "Loxmatic Daemon started."
 
+# Stop any running HM software
+kill_hm
+
+# Use shortmode if not during boot up
+if [[ $1 == "short" ]]; then
+	# Source HM environment
+	[[ -r REPLACELBPCONFIGDIR/hm_env ]] && . REPLACELBPCONFIGDIR/hm_env
+else
+	identify_hw
+	init_hw
+	# save all HM_ env variables
+	set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
+fi
+
+LOGINF "This is the HM environment:"
+cat REPLACELBPCONFIGDIR/hm_env >> ${FILENAME}
+
+# Start Homematic
+start_hm
+
+# output some status information
+echo -n "BidCos-RF: "
+[[ -n "${HM_HMRF_DEV}" ]] && echo -n "${HM_HMRF_DEV}, " || echo -n "none, "
+echo -n "HmIP: "
+[[ -n "${HM_HMIP_DEV}" ]] && echo -n "${HM_HMIP_DEV}, " || echo -n "none, "
+echo "OK"
+
+chown -R loxberry:loxberry REPLACELBPCONFIGDIR
+
+exit 0
+
+#############t 0 Function: kill ################
+
+function kill_hm()
+{
+
 # Killing existing RFD
 LOGINF "Killing any running RFD instance..."
 if pgrep -f bin/rfd > /dev/null 2>&1 ; then
@@ -56,6 +92,14 @@ if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
         sleep 0.1
         pkill -9 -f hm2mqtt/index.js
 fi
+
+}
+
+
+############## Function: identify_hw ################
+
+function identify_hw()
+{
 
 #
 # Identify Hardware
@@ -122,6 +166,14 @@ fi
 #
 
 # To be added here...
+
+}
+
+
+############## Function: init_hw ################
+
+function init_hw()
+{
 
 #
 # Init Hardware
@@ -279,11 +331,13 @@ if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
 	fi
 fi								
 
-# save all HM_ env variables
-set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
+}
 
-LOGINF "This is the HM environment:"
-cat REPLACELBPCONFIGDIR/hm_env >> ${FILENAME}
+
+############## Function: start_hm ################
+
+function start_hm()
+{
 
 # What is enabled?
 RFDENABLED=$(jq -r '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)
@@ -364,11 +418,4 @@ if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 	done
 fi
 
-# output some status information
-echo -n "BidCos-RF: "
-[[ -n "${HM_HMRF_DEV}" ]] && echo -n "${HM_HMRF_DEV}, " || echo -n "none, "
-echo -n "HmIP: "
-[[ -n "${HM_HMIP_DEV}" ]] && echo -n "${HM_HMIP_DEV}, " || echo -n "none, "
-echo "OK"
-
-chown -R loxberry:loxberry REPLACELBPCONFIGDIR
+}
