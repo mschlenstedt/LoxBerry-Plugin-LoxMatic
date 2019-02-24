@@ -25,37 +25,6 @@ LOGDIR=$LBPLOG/$PLUGINNAME
 STDERR=1
 LOGSTART "Loxmatic Daemon started."
 
-# Stop any running HM software
-kill_hm
-
-# Use shortmode if not during boot up
-if [[ $1 == "short" ]]; then
-	# Source HM environment
-	[[ -r REPLACELBPCONFIGDIR/hm_env ]] && . REPLACELBPCONFIGDIR/hm_env
-else
-	identify_hw
-	init_hw
-	# save all HM_ env variables
-	set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
-fi
-
-LOGINF "This is the HM environment:"
-cat REPLACELBPCONFIGDIR/hm_env >> ${FILENAME}
-
-# Start Homematic
-start_hm
-
-# output some status information
-echo -n "BidCos-RF: "
-[[ -n "${HM_HMRF_DEV}" ]] && echo -n "${HM_HMRF_DEV}, " || echo -n "none, "
-echo -n "HmIP: "
-[[ -n "${HM_HMIP_DEV}" ]] && echo -n "${HM_HMIP_DEV}, " || echo -n "none, "
-echo "OK"
-
-chown -R loxberry:loxberry REPLACELBPCONFIGDIR
-
-exit 0
-
 #############t 0 Function: kill ################
 
 function kill_hm()
@@ -354,6 +323,7 @@ if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERE
 		echo -n "."
 		if pgrep -f bin/multimacd > /dev/null 2>&1 ; then
 			echo "OK"
+			MULTIMACDPID=$(pgrep -f bin/multimacd)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
@@ -373,6 +343,7 @@ if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]];  then
 		if lsof -Pi :2001 -sTCP:LISTEN -t > /dev/null 2>&1 ; then
 		#if pgrep -f bin/rfd > /dev/null 2>&1 ; then
 			echo "OK"
+			RFDPID=$(pgrep -f bin/rfd)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
@@ -392,6 +363,7 @@ if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  the
 		if lsof -Pi :2010 -sTCP:LISTEN -t > /dev/null 2>&1 ; then
 		#if pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
 			echo "OK"
+			HMSERVERPID=$(pgrep -f HMIPServer.jar)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
@@ -410,6 +382,7 @@ if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 		echo -n "."
 		if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
 			echo "OK"
+			HM2MQTTPID=$(pgrep -f hm2mqtt/index.js)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
@@ -419,3 +392,46 @@ if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 fi
 
 }
+
+
+############## END Functions ################
+
+# Stop any running HM software
+kill_hm
+
+# Use shortmode if not during boot up
+if [[ $1 == "short" ]]; then
+	# Source HM environment
+	[[ -r REPLACELBPCONFIGDIR/hm_env ]] && . REPLACELBPCONFIGDIR/hm_env
+else
+	identify_hw
+	init_hw
+	# save all HM_ env variables
+	set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
+fi
+
+LOGINF "This is the HM environment:"
+cat REPLACELBPCONFIGDIR/hm_env >> ${FILENAME}
+
+# Start Homematic
+start_hm
+
+# output some status information
+echo -n "BidCos-RF: "
+[[ -n "${HM_HMRF_DEV}" ]] && echo -n "${HM_HMRF_DEV}, " || echo -n "None, "
+echo -n "HmIP: "
+[[ -n "${HM_HMIP_DEV}" ]] && echo -n "${HM_HMIP_DEV}, " || echo -n "None, "
+echo -n "Multimacd: "
+[[ -n "${MULTIMACDPID}" ]] && echo -n "${MULTIMACDPID}, " || echo -n "None, "
+echo -n "RFD: "
+[[ -n "${RFDPID}" ]] && echo -n "${RFDPID}, " || echo -n "None, "
+echo -n "HMIPServer: "
+[[ -n "${HMSERVERPID}" ]] && echo -n "${HMSERVERPID}, " || echo -n "None, "
+echo -n "HM2MQTT: "
+[[ -n "${HM2MQTTPID}" ]] && echo -n "${HM2MQTTPID}, " || echo -n "None, "
+echo "OK"
+
+chown -R loxberry:loxberry REPLACELBPCONFIGDIR
+
+exit 0
+
