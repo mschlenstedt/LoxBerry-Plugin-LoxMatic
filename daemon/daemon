@@ -431,7 +431,6 @@ LOGINF "Multimacd: ${MULTIMACDPID}"
 LOGINF "RFD: ${RFDPID}"
 LOGINF "HMIPServer: ${HMSERVERPID}"
 LOGINF "HM2MQTT: ${HM2MQTTPID}"
-LOGEND "Exit."
 
 chown -R loxberry:loxberry REPLACELBPCONFIGDIR
 
@@ -444,5 +443,7 @@ if [ $LOGLEVEL -eq 7 ]; then
 	LOGDEB "Loaded kernel modules:"
 	lsmod >> ${FILENAME}
 fi
+
+LOGEND "Exit."
 
 exit 0
