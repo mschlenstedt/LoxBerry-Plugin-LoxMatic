@@ -435,5 +435,14 @@ LOGEND "Exit."
 
 chown -R loxberry:loxberry REPLACELBPCONFIGDIR
 
-exit 0
+# Show some more informations if in Debug mode
+if [ $LOGLEVEL -eq 7 ]; then
+	LOGDEB "The following plugins are installed:"
+	cat $LBSDATA/plugindatabase.dat >> ${FILENAME}
+	LOGDEB "The system is:"
+	uname -a >> ${FILENAME}
+	LOGDEB "Loaded kernel modules:"
+	lsmod >> ${FILENAME}
+fi
 
+exit 0
