@@ -25,7 +25,7 @@ use warnings;
 use strict;
 
 # Version of this script
-my $version = "0.1.0.1";
+my $version = "0.1.1.0";
 
 # CGI
 my $cgi = CGI->new;
@@ -112,6 +112,37 @@ sub print_form
 	my $helplink = "https://www.loxwiki.eu/x/1IaxAg";
 	my $helptemplate = "help.html";
 
+	# Check for some common problems...
+	my $output = ""
+	$output = qx(grep -E "console=(serial0|ttyAMA0|ttyS0)" /boot/cmdline.txt);
+	if ($output) {
+		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_SERIALCONSOLEENABLED'}, "error");
+	}
+	$output = qx(grep -E "^enable_uart=1" /boot/config.txt);
+	if (!$output) {
+		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_UARTDISABLED'}, "error");
+	}
+	$output = qx(grep -E "^core_freq=" /boot/config.txt);
+	if ($output) {
+		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_COREFREQ'}, "error");
+	}
+	$output = qx(grep -E "^init_uart_clock" /boot/config.txt);
+	if ($output) {
+		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_INITUARTCLOCK'}, "error");
+	}
+	$output = qx(grep -E "^dtoverlay=pi3-disable-bt" /boot/config.txt);
+	if (!$output) {
+		$output = qx(grep -E "^dtoverlay=pi3-miniuart-bt" /boot/config.txt);
+		if (!$output) {
+			notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_P3BLUETOOTH'}, "error");
+		}
+	}
+	$output = qx(grep -E "^dtparam=i2c_arm=on" /boot/config.txt);
+	if (!$output) {
+		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_I2CENABLED'}, "error");
+	}
+
+	# Navbar
         $navbar{10}{Name} = $SL{'SETTINGS.LABEL_NAV_SETTINGS'};
         $navbar{10}{URL} = 'index.cgi';
         $navbar{10}{Notify_Package} = $lbpplugindir;
@@ -126,11 +157,10 @@ sub print_form
 	$navbar{90}{URL} =  LoxBerry::Web::loglist_url();
         $navbar{90}{target} = '_blank';
 
+	# Template
         LoxBerry::Web::lbheader($plugintitle, $helplink, $helptemplate);
-
 	print LoxBerry::Log::get_notifications_html($lbpplugindir);
         print $template->output();
-
         LoxBerry::Web::lbfooter();
 
 }
