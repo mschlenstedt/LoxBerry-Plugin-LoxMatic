@@ -113,7 +113,7 @@ sub print_form
 	my $helptemplate = "help.html";
 
 	# Check for some common problems...
-	my $output = ""
+	my $output = "";
 	$output = qx(grep -E "console=(serial0|ttyAMA0|ttyS0)" /boot/cmdline.txt);
 	if ($output) {
 		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_SERIALCONSOLEENABLED'}, "error");
