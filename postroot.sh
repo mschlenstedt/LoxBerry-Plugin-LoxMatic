@@ -45,14 +45,14 @@ systemctl restart rsyslog.service
 echo "<INFO> Configuring serial interface..."
 if cat /boot/config.txt | grep -qe "^core_freq="; then
 	echo "<INFO> Removing core_freq= from /boot/config.txt"
-	/bin/sed -i 's|$core_freq=|#core_freq=|g' /boot/config.txt
+	/bin/sed -i 's|^core_freq=|#core_freq=|g' /boot/config.txt
 else
 	echo "<INFO> core_freq= not found in /boot/config.txt. That's OK."
 fi
 
 if cat /boot/config.txt | grep -qe "^init_uart_clock="; then
 	echo "<INFO> Removing init_uart_clock= from /boot/config.txt"
-	/bin/sed -i 's|$init_uart_clock=|#init_uart_clock=|g' /boot/config.txt
+	/bin/sed -i 's|^init_uart_clock=|#init_uart_clock=|g' /boot/config.txt
 else
 	echo "<INFO> init_uart_clock= not found in /boot/config.txt. That's OK."
 fi
@@ -76,13 +76,13 @@ fi
 
 if cat /boot/config.txt | grep -qe "^#dtparam=i2c_arm="; then
 	echo "<INFO> Adding dtparam=i2c_arm=on to /boot/config.txt"
-	/bin/sed -i 's|$#dtparam=i2c_arm=\(.*\)|dtparam=i2c_arm=on|g' /boot/config.txt
+	/bin/sed -i 's|^#dtparam=i2c_arm=\(.*\)|dtparam=i2c_arm=on|g' /boot/config.txt
 elif cat /boot/config.txt | grep -qe "^dtparam=i2c_arm=off"; then
 	echo "<INFO> Adding dtparam=i2c_arm=on to /boot/config.txt"
-	/bin/sed -i 's|$dtparam=i2c_arm=\(.*\)|dtparam=i2c_arm=on|g' /boot/config.txt
+	/bin/sed -i 's|^dtparam=i2c_arm=\(.*\)|dtparam=i2c_arm=on|g' /boot/config.txt
 elif cat /boot/config.txt | grep -qe "^dtparam=i2c_arm="; then
 	echo "<INFO> Adding dtparam=i2c_arm=on to /boot/config.txt"
-	/bin/sed -i 's|$dtparam=i2c_arm=\(.*\)|dtparam=i2c_arm=on|g' /boot/config.txt
+	/bin/sed -i 's|^dtparam=i2c_arm=\(.*\)|dtparam=i2c_arm=on|g' /boot/config.txt
 elif ! cat /boot/config.txt | grep -qe "dtparam=i2c_arm"; then
 	echo "<INFO> Adding dtparam=i2c_arm=on to /boot/config.txt"
 	echo "dtparam=i2c_arm=on" >> /boot/config.txt
