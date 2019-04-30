@@ -76,22 +76,32 @@ function identify_hw()
 LOGINF "Identifying Homematic Hardware..."
 
 # Load EQ3 / RAW UART kernel modules
-LOGINF "Loading Kernel modules..."
 if [[ ! -e "/lib/modules/$(uname -r)/extra/bcm2835_raw_uart.ko" ]]; then
-	notify $PLUGINNAME daemon "Cannot find the needed kernel modules. Giving up. Please update LoxBerry AND the Plugin to the latest versions." err > /dev/null 2>&1
-	LOGERR "Cannot find the needed kernel modules. Giving up."
-	LOGEND
-	HM_MODE="ERROR"
-	set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
-	exit 1;
+	if [[ -e $LBPDATA/$PLUGINNAME/kernel/$(uname -r) ]]; then
+		LOGINF "(Re-)Installing Kernel modules..."
+		mkdir -v -p /lib/modules/$(uname -r)/extra
+		cp -v $LBPDATA/$PLUGINNAME/kernel/$(uname -r)/* /lib/modules/$(uname -r)/extra
+		depmod -a
+	else 
+		notify $PLUGINNAME daemon "Cannot find the needed kernel modules. Giving up. Please update LoxBerry AND the Plugin to the latest versions." err > /dev/null 2>&1
+		LOGERR "Cannot find the needed kernel modules. Giving up."
+		LOGEND
+		HM_MODE="ERROR"
+		set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
+		exit 1;
+	fi
 fi
+
+# Loading Kernel modules
+LOGINF "Loading Kernel modules..."
 modprobe -v bcm2835_raw_uart >> ${FILENAME} 2>&1
 modprobe -v eq3_char_loop >> ${FILENAME} 2>&1
 rmmod -v rtc_ds1307 >> ${FILENAME} 2>&1
 
 # load the common i2c kernel modules
 if [[ -e REPLACELBCONFIGDIR/is_raspberry.cfg ]];  then
-	modprobe i2c_bcm2835 >> ${FILENAME} 2>&1
+	modprobe -v i2c_bcm2835 >> ${FILENAME} 2>&1
+	modprobe -v i2c_bcm2708 >> ${FILENAME} 2>&1
 fi
 modprobe -v i2c_dev >> ${FILENAME} 2>&1
 
@@ -206,8 +216,8 @@ if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
 	# do firmware upgrade after first reboot
 	# Start Firmware Upgrade
 	if [[ -e "$LBPCONFIG/$PLUGINNAME/do_firmwareupgrade" ]]; then
-		notify $PLUGINNAME daemon "Your Homematic Module was updated to the latest firmware." > /dev/null 2>&1
-		LOGINF "Doing firmware upgrade..."
+		notify $PLUGINNAME daemon "Firmwareupdate of your Homematic Module HM-MOD-RPI-PCB (if any) was initialized." > /dev/null 2>&1
+		LOGINF "Doing/Trying firmware upgrade..."
 		${HM_HOME}/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -l 0 -c -t HM-MOD-UART -d $LBPDATA/$PLUGINNAME/occu/firmware/HM-MOD-UART -u >> ${FILENAME} 2>&1
 		rm $LBPCONFIG/$PLUGINNAME/do_firmwareupgrade
 	fi
@@ -218,8 +228,8 @@ if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
 	# do firmware upgrade after first reboot
 	# Start Firmware Upgrade
 	if [[ -e "$LBPCONFIG/$PLUGINNAME/do_firmwareupgrade" ]]; then
-		notify $PLUGINNAME daemon "Your Homematic Module was updated to the latest firmware." > /dev/null 2>&1
-		LOGINF "Doing firmware upgrade..."
+		notify $PLUGINNAME daemon "Firmwareupdate of your Homematic Module RPI-RF-MOD was initialized." > /dev/null 2>&1
+		LOGINF "Doing/Trying firmware upgrade..."
 		/usr/bin/java -Dgnu.io.rxtx.SerialPorts=${HM_HOST_GPIO_UART} -jar /opt/HmIP/hmip-copro-update.jar -p ${HM_HOST_GPIO_UART} -o -f $LBPDATA/$PLUGINNAME/occu/firmware/RPI-RF-MOD/dualcopro_update_blhmip-*.eq3 >> ${FILENAME} 2>&1
 		rm $LBPCONFIG/$PLUGINNAME/do_firmwareupgrade
 	fi
