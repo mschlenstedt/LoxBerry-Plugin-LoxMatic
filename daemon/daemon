@@ -446,12 +446,16 @@ chown -R loxberry:loxberry REPLACELBPCONFIGDIR
 
 # Show some more informations if in Debug mode
 if [ $LOGLEVEL -eq 7 ]; then
-	LOGDEB "The following plugins are installed:"
+	LOGINF "The following plugins are installed:"
 	cat $LBSDATA/plugindatabase.dat >> ${FILENAME}
-	LOGDEB "The system is:"
+	LOGINF "The system is:"
 	uname -a >> ${FILENAME}
-	LOGDEB "Loaded kernel modules:"
+	LOGINF "Loaded kernel modules:"
 	lsmod >> ${FILENAME}
+	LOGINF "/boot/config.txt is:"
+	cat /boot/config.txt >> ${FILENAME}
+	LOGINF "/boot/cmdline.txt is:"
+	cat /boot/cmdline.txt >> ${FILENAME}
 fi
 
 LOGEND "Exit."
