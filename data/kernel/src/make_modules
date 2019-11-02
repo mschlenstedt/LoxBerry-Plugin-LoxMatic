@@ -2,6 +2,14 @@
 
 # Quick and Dirty...
 
+if test $UID -ne 0; then
+        echo "This script has to be run as root. Exiting."
+        exit 1
+fi
+
+# Variables
+KERNEL=$(uname -r | sed 's/[-+].*$//')
+
 # Check for correct GIT Hash of Kernel
 echo
 echo "*************************************************************"
@@ -24,7 +32,6 @@ echo "*************************************************************"
 echo
 
 mkdir -p ./kernel_src
-mkdir -p ../$(uname -r)
 rm /lib/modules/$(uname -r)/build
 rm /lib/modules/$(uname -r)/source
 ln -s $(pwd)/kernel_src/linux /lib/modules/$(uname -r)/build
@@ -46,46 +53,161 @@ echo "*************************************************************"
 echo
 /usr/local/bin/rpi-source -v -d ./kernel_src --nomake --delete
 
-# Prepare Kernel
+# Prepare Kernel Pi1
 echo
 echo "*************************************************************"
-echo "Prepare Kernel..."
+echo "Prepare Kernel for Pi1..."
 echo "*************************************************************"
 echo
 cd ./kernel_src/linux
 make clean
-zcat /proc/config.gz > .config
+#modprobe configs
+#zcat /proc/config.gz > .config
+zcat ../../pi1_config.gz > .config
+. .config
+if [ ! $CONFIG_LOCALVERSION ]
+then
+	UNAME="$KERNEL+"
+else
+	UNAME="$KERNEL$CONFIG_LOCALVERSION"
+fi
+mkdir -p ../../../$UNAME
 yes \n | make prepare
 cd ../..
 
-# Conpile modules and integrate them into repo
+# Compile modules for Pi1 and integrate them into repo 
 echo
 echo "*************************************************************"
-echo "Compile modules..."
+echo "Compile modules for Pi1..."
 echo "*************************************************************"
 echo
 cd ./bcm2835_raw_uart
 make clean
 make
-cp bcm2835_raw_uart.ko ../../$(uname -r)/
+cp bcm2835_raw_uart.ko ../../$UNAME/
 cd ..
 cd ./eq3_char_loop
 make clean
 make
-cp eq3_char_loop.ko ../../$(uname -r)/
+cp eq3_char_loop.ko ../../$UNAME/
 cd ..
 
 # Check modules
 echo
 echo "*************************************************************"
-echo "Check modules..."
+echo "Check modules for Pi2..."
 echo "*************************************************************"
 echo
 echo "Current kernel version is: $(uname -r)"
 echo
-modinfo ../$(uname -r)/bcm2835_raw_uart.ko
+modinfo ../$UNAME/bcm2835_raw_uart.ko
 echo
-modinfo ../$(uname -r)/eq3_char_loop.ko
+modinfo ../$UNAME/eq3_char_loop.ko
+
+# Prepare Kernel Pi2/3
+echo
+echo "*************************************************************"
+echo "Prepare Kernel for Pi2/3..."
+echo "*************************************************************"
+echo
+cd ./kernel_src/linux
+make clean
+#modprobe configs
+#zcat /proc/config.gz > .config
+zcat ../../pi2_config.gz > .config
+. .config
+if [ ! $CONFIG_LOCALVERSION ]
+then
+	UNAME="$KERNEL+"
+else
+	UNAME="$KERNEL$CONFIG_LOCALVERSION"
+fi
+mkdir -p ../../../$UNAME
+yes \n | make prepare
+cd ../..
+
+# Compile modules for Pi/32 and integrate them into repo 
+echo
+echo "*************************************************************"
+echo "Compile modules for Pi2/3..."
+echo "*************************************************************"
+echo
+cd ./bcm2835_raw_uart
+make clean
+make
+cp bcm2835_raw_uart.ko ../../$UNAME/
+cd ..
+cd ./eq3_char_loop
+make clean
+make
+cp eq3_char_loop.ko ../../$UNAME/
+cd ..
+
+# Check modules
+echo
+echo "*************************************************************"
+echo "Check modules for Pi2/3..."
+echo "*************************************************************"
+echo
+echo "Current kernel version is: $(uname -r)"
+echo
+modinfo ../$UNAME/bcm2835_raw_uart.ko
+echo
+modinfo ../$UNAME/eq3_char_loop.ko
+
+# Prepare Kernel Pi4
+echo
+echo "*************************************************************"
+echo "Prepare Kernel for Pi4..."
+echo "*************************************************************"
+echo
+cd ./kernel_src/linux
+make clean
+#modprobe configs
+#zcat /proc/config.gz > .config
+zcat ../../pi4_config.gz > .config
+. .config
+if [ ! $CONFIG_LOCALVERSION ]
+then
+	UNAME="$KERNEL+"
+else
+	UNAME="$KERNEL$CONFIG_LOCALVERSION"
+fi
+mkdir -p ../../../$UNAME
+yes \n | make prepare
+cd ../..
+
+# Compile modules for Pi4 and integrate them into repo 
+echo
+echo "*************************************************************"
+echo "Compile modules for Pi4..."
+echo "*************************************************************"
+echo
+cd ./bcm2835_raw_uart
+make clean
+make
+cp bcm2835_raw_uart.ko ../../$UNAME/
+cd ..
+cd ./eq3_char_loop
+make clean
+make
+cp eq3_char_loop.ko ../../$UNAME/
+cd ..
+
+# Check modules
+echo
+echo "*************************************************************"
+echo "Check modules for Pi4..."
+echo "*************************************************************"
+echo
+echo "Current kernel version is: $(uname -r)"
+echo
+modinfo ../$UNAME/bcm2835_raw_uart.ko
+echo
+modinfo ../$UNAME/eq3_char_loop.ko
+
+
+
 echo
 echo "Finished."
 
