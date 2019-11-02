@@ -1,0 +1,89 @@
+#/bin/bash
+
+# Quick and Dirty...
+
+# Check for correct GIT Hash of Kernel
+echo
+echo "*************************************************************"
+if [ -e "/boot/.firmware_revision" ]
+then
+	echo "OK. Found Firmware revision in /boot/.firmware_revision"
+else
+	echo "Could not find /boot/.firmware_revision. Please give me the GIT hash for the Firmware Revision:"
+	read answer
+	echo $answer > /boot/.firmware_revision
+fi
+echo "*************************************************************"
+echo
+
+# Prepare folders
+echo
+echo "*************************************************************"
+echo "Prepare folders..."
+echo "*************************************************************"
+echo
+
+mkdir -p ./kernel_src
+mkdir -p ../$(uname -r)
+rm /lib/modules/$(uname -r)/build
+rm /lib/modules/$(uname -r)/source
+ln -s $(pwd)/kernel_src/linux /lib/modules/$(uname -r)/build
+ln -s $(pwd)/kernel_src/linux /lib/modules/$(uname -r)/source
+
+# Download/Update rpi-source
+echo
+echo "*************************************************************"
+echo "Download rpi-source and install..."
+echo "*************************************************************"
+echo
+wget https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source -O /usr/local/bin/rpi-source && sudo chmod +x /usr/local/bin/rpi-source 
+
+# Download Kernel sources
+echo
+echo "*************************************************************"
+echo "Download Kernel sources..."
+echo "*************************************************************"
+echo
+/usr/local/bin/rpi-source -v -d ./kernel_src --nomake --delete
+
+# Prepare Kernel
+echo
+echo "*************************************************************"
+echo "Prepare Kernel..."
+echo "*************************************************************"
+echo
+cd ./kernel_src/linux
+make clean
+make oldconfig
+make modules_prepare
+cd ..
+
+# Conpile modules and integrate them into repo
+echo
+echo "*************************************************************"
+echo "Compile modules..."
+echo "*************************************************************"
+echo
+cd ./bcm2835_raw_uart
+make clean
+make
+cp bcm2835_raw_uart.ko ../../$(uname -r)/
+cd ..
+cd ./eq3_char_loop
+make clean
+make
+cp eq3_char_loop.ko ../../$(uname -r)/
+
+# Check modules
+echo
+echo "*************************************************************"
+echo "Check modules..."
+echo "*************************************************************"
+echo
+echo "Current kernel version is: $(uname -r)"
+echo
+modinfo ../../$(uname -r)/bcm2835_raw_uart.ko
+echo
+modinfo ../../$(uname -r)/eq3_char_loop.ko
+echo
+echo "Finished."
