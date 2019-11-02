@@ -54,9 +54,9 @@ echo "*************************************************************"
 echo
 cd ./kernel_src/linux
 make clean
-make oldconfig
-make modules_prepare
-cd ..
+zcat /proc/config.gz > .config
+yes \n | make prepare
+cd ../..
 
 # Conpile modules and integrate them into repo
 echo
@@ -73,6 +73,7 @@ cd ./eq3_char_loop
 make clean
 make
 cp eq3_char_loop.ko ../../$(uname -r)/
+cd ..
 
 # Check modules
 echo
@@ -82,8 +83,15 @@ echo "*************************************************************"
 echo
 echo "Current kernel version is: $(uname -r)"
 echo
-modinfo ../../$(uname -r)/bcm2835_raw_uart.ko
+modinfo ../$(uname -r)/bcm2835_raw_uart.ko
 echo
-modinfo ../../$(uname -r)/eq3_char_loop.ko
+modinfo ../$(uname -r)/eq3_char_loop.ko
 echo
 echo "Finished."
+
+echo
+echo "*************************************************************"
+echo "Reset permissions..."
+echo "*************************************************************"
+echo
+chown -R loxberry:loxberry ../../kernel/
