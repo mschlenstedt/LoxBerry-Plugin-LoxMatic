@@ -75,8 +75,25 @@ function identify_hw()
 #
 LOGINF "Identifying Homematic Hardware..."
 
+# Load EQ3 / RAW UART kernel modules # THIS IS FOR COMPATIBILITY WITH OLDER KERNELS
+#if [[ ! -e "/lib/modules/$(uname -r)/extra/bcm2835_raw_uart.ko" ]]; then
+#	if [[ -e $LBPDATA/$PLUGINNAME/kernel/$(uname -r) ]]; then
+#		LOGINF "(Re-)Installing Kernel modules..."
+#		mkdir -v -p /lib/modules/$(uname -r)/extra
+#		cp -v $LBPDATA/$PLUGINNAME/kernel/$(uname -r)/* /lib/modules/$(uname -r)/extra
+#		depmod -a
+#	else 
+#		notify $PLUGINNAME daemon "Cannot find the needed kernel modules. Giving up. Please update LoxBerry AND the Plugin to the latest versions." err > /dev/null 2>&1
+#		LOGERR "Cannot find the needed kernel modules. Giving up."
+#		LOGEND
+#		HM_MODE="ERROR"
+#		set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
+#		exit 1;
+#	fi
+#fi
+
 # Load EQ3 / RAW UART kernel modules
-if [[ ! -e "/lib/modules/$(uname -r)/extra/bcm2835_raw_uart.ko" ]]; then
+if [[ ! -e "/lib/modules/$(uname -r)/extra/generic_raw_uart.ko" ]]; then
 	if [[ -e $LBPDATA/$PLUGINNAME/kernel/$(uname -r) ]]; then
 		LOGINF "(Re-)Installing Kernel modules..."
 		mkdir -v -p /lib/modules/$(uname -r)/extra
@@ -94,7 +111,11 @@ fi
 
 # Loading Kernel modules
 LOGINF "Loading Kernel modules..."
-modprobe -v bcm2835_raw_uart >> ${FILENAME} 2>&1
+if [[ -e "/lib/modules/$(uname -r)/extra/generic_raw_uart.ko" ]]; then
+	modprobe -v generic_raw_uart >> ${FILENAME} 2>&1
+else
+	modprobe -v bcm2835_raw_uart >> ${FILENAME} 2>&1
+fi
 modprobe -v eq3_char_loop >> ${FILENAME} 2>&1
 rmmod -v rtc_ds1307 >> ${FILENAME} 2>&1
 
