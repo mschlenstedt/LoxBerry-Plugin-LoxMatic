@@ -1,0 +1,12 @@
+gcc version check: mismatch between installed gcc (8) and /proc/version (4.9.3)
+
+ *** rpi-update: https://github.com/Hexxeh/rpi-firmware
+
+ *** Firmware revision: f8c5a8734cde51ab94e07c204c97563a65a68636
+download: https://raw.githubusercontent.com/Hexxeh/rpi-firmware/f8c5a8734cde51ab94e07c204c97563a65a68636/git_hash
+sudo modprobe configs 2> /dev/null
+
+ *** Linux source commit: 216324a8655b7256961a378893f290d7fa1eecc4
+
+ *** Kernel source already installed: /usr/src/linux-216324a8655b7256961a378893f290d7fa1eecc4
+
