@@ -9,6 +9,7 @@ fi
 
 # Variables
 KERNEL=$(uname -r | sed 's/[-+].*$//')
+CURRDIR=$(pwd)
 
 # Check for correct GIT Hash of Kernel
 echo
@@ -24,6 +25,8 @@ fi
 echo "*************************************************************"
 echo
 
+FIRMWAREREV=$(cat /boot/.firmware_revision)
+
 # Prepare folders
 echo
 echo "*************************************************************"
@@ -31,11 +34,11 @@ echo "Prepare folders..."
 echo "*************************************************************"
 echo
 
-mkdir -p ./kernel_src
+#mkdir -p ./kernel_src
 rm /lib/modules/$(uname -r)/build
 rm /lib/modules/$(uname -r)/source
-ln -s $(pwd)/kernel_src/linux /lib/modules/$(uname -r)/build
-ln -s $(pwd)/kernel_src/linux /lib/modules/$(uname -r)/source
+ln -s /usr/src/linux /lib/modules/$(uname -r)/build
+ln -s /usr/src/linux /lib/modules/$(uname -r)/source
 
 # Download/Update rpi-source
 echo
@@ -51,29 +54,36 @@ echo "*************************************************************"
 echo "Download Kernel sources..."
 echo "*************************************************************"
 echo
-/usr/local/bin/rpi-source -v -d ./kernel_src --nomake --delete
+rm $CURRDIR/rpi-source.log
+/usr/local/bin/rpi-source --skip-update -v -d /usr/src --nomake --delete 2>&1 | tee -a $CURRDIR/rpi-source.log
 
-# Prepare Kernel Pi1
+SRCCOMMIT=$(cat $CURRDIR/rpi-source.log | grep 'Linux source commit' | sed 's/.*Linux source commit: //')
+
+wget https://raw.githubusercontent.com/Hexxeh/rpi-firmware/$FIRMWAREREV/Module7.symvers -O /usr/src/linux/Module7.symvers
+wget https://raw.githubusercontent.com/Hexxeh/rpi-firmware/$FIRMWAREREV/Module7l.symvers -O /usr/src/linux/Module7l.symvers
+wget https://raw.githubusercontent.com/Hexxeh/rpi-firmware/$FIRMWAREREV/Module.symvers -O /usr/src/linux/Modulepi1.symvers
+
+# Prepar Kernel Pi1
 echo
 echo "*************************************************************"
 echo "Prepare Kernel for Pi1..."
 echo "*************************************************************"
 echo
-cd ./kernel_src/linux
+cd /usr/src/linux
 make clean
 #modprobe configs
 #zcat /proc/config.gz > .config
-zcat ../../pi1_config.gz > .config
+zcat $CURRDIR/pi1_config.gz > .config
 . .config
 if [ ! $CONFIG_LOCALVERSION ]
 then
 	UNAME="$KERNEL+"
 else
-	UNAME="$KERNEL$CONFIG_LOCALVERSION"
+	UNAME="$KERNEL$CONFIG_LOCALVERSION+"
 fi
-mkdir -p ../../../$UNAME
-yes \n | make prepare
-cd ../..
+mkdir -p $CURRDIR/../$UNAME
+cp /usr/src/linux/Modulepi1.symvers /usr/src/linux/Module.symvers
+yes \n | make modules_prepare
 
 # Compile modules for Pi1 and integrate them into repo 
 echo
@@ -81,67 +91,62 @@ echo "*************************************************************"
 echo "Compile modules for Pi1..."
 echo "*************************************************************"
 echo
-cd ./bcm2835_raw_uart
+cd $CURRDIR/piVCCU/kernel
 make clean
 make
-cp bcm2835_raw_uart.ko ../../$UNAME/
-cd ..
-cd ./eq3_char_loop
-make clean
-make
-cp eq3_char_loop.ko ../../$UNAME/
-cd ..
+
+cp generic_raw_uart.ko $CURRDIR/../$UNAME/
+#cp bcm2835_raw_uart.ko $CURRDIR/../$UNAME/
+cp eq3_char_loop.ko $CURRDIR/../$UNAME/
 
 # Check modules
 echo
 echo "*************************************************************"
-echo "Check modules for Pi2..."
+echo "Check modules for Pi1..."
 echo "*************************************************************"
 echo
 echo "Current kernel version is: $(uname -r)"
 echo
-modinfo ../$UNAME/bcm2835_raw_uart.ko
+modinfo $CURRDIR/../$UNAME/generic_raw_uart.ko
+#modinfo $CURRDIR/../$UNAME/bcm2835_raw_uart.ko
 echo
-modinfo ../$UNAME/eq3_char_loop.ko
+modinfo $CURRDIR/../$UNAME/eq3_char_loop.ko
 
-# Prepare Kernel Pi2/3
+# Prepar Kernel Pi2/3
 echo
 echo "*************************************************************"
-echo "Prepare Kernel for Pi2/3..."
+echo "Prepare Kernel for Pi2/31..."
 echo "*************************************************************"
 echo
-cd ./kernel_src/linux
+cd /usr/src/linux
 make clean
 #modprobe configs
 #zcat /proc/config.gz > .config
-zcat ../../pi2_config.gz > .config
+zcat $CURRDIR/pi2_config.gz > .config
 . .config
 if [ ! $CONFIG_LOCALVERSION ]
 then
 	UNAME="$KERNEL+"
 else
-	UNAME="$KERNEL$CONFIG_LOCALVERSION"
+	UNAME="$KERNEL$CONFIG_LOCALVERSION+"
 fi
-mkdir -p ../../../$UNAME
-yes \n | make prepare
-cd ../..
+mkdir -p $CURRDIR/../$UNAME
+cp /usr/src/linux/Module7.symvers /usr/src/linux/Module.symvers
+yes \n | make modules_prepare
 
-# Compile modules for Pi/32 and integrate them into repo 
+# Compile modules for Pi2/3 and integrate them into repo 
 echo
 echo "*************************************************************"
 echo "Compile modules for Pi2/3..."
 echo "*************************************************************"
 echo
-cd ./bcm2835_raw_uart
+cd $CURRDIR/piVCCU/kernel
 make clean
 make
-cp bcm2835_raw_uart.ko ../../$UNAME/
-cd ..
-cd ./eq3_char_loop
-make clean
-make
-cp eq3_char_loop.ko ../../$UNAME/
-cd ..
+
+cp generic_raw_uart.ko $CURRDIR/../$UNAME/
+#cp bcm2835_raw_uart.ko $CURRDIR/../$UNAME/
+cp eq3_char_loop.ko $CURRDIR/../$UNAME/
 
 # Check modules
 echo
@@ -151,48 +156,46 @@ echo "*************************************************************"
 echo
 echo "Current kernel version is: $(uname -r)"
 echo
-modinfo ../$UNAME/bcm2835_raw_uart.ko
+modinfo $CURRDIR/../$UNAME/generic_raw_uart.ko
+#modinfo $CURRDIR/../$UNAME/bcm2835_raw_uart.ko
 echo
-modinfo ../$UNAME/eq3_char_loop.ko
+modinfo $CURRDIR/../$UNAME/eq3_char_loop.ko
 
-# Prepare Kernel Pi4
+# Prepar Kernel Pi4
 echo
 echo "*************************************************************"
 echo "Prepare Kernel for Pi4..."
 echo "*************************************************************"
 echo
-cd ./kernel_src/linux
+cd /usr/src/linux
 make clean
 #modprobe configs
 #zcat /proc/config.gz > .config
-zcat ../../pi4_config.gz > .config
+zcat $CURRDIR/pi4_config.gz > .config
 . .config
 if [ ! $CONFIG_LOCALVERSION ]
 then
 	UNAME="$KERNEL+"
 else
-	UNAME="$KERNEL$CONFIG_LOCALVERSION"
+	UNAME="$KERNEL$CONFIG_LOCALVERSION+"
 fi
-mkdir -p ../../../$UNAME
-yes \n | make prepare
-cd ../..
+mkdir -p $CURRDIR/../$UNAME
+cp /usr/src/linux/Module7l.symvers /usr/src/linux/Module.symvers
+yes \n | make modules_prepare
 
-# Compile modules for Pi4 and integrate them into repo 
+# Compile modules for Pi1 and integrate them into repo 
 echo
 echo "*************************************************************"
 echo "Compile modules for Pi4..."
 echo "*************************************************************"
 echo
-cd ./bcm2835_raw_uart
+cd $CURRDIR/piVCCU/kernel
 make clean
 make
-cp bcm2835_raw_uart.ko ../../$UNAME/
-cd ..
-cd ./eq3_char_loop
-make clean
-make
-cp eq3_char_loop.ko ../../$UNAME/
-cd ..
+
+cp generic_raw_uart.ko $CURRDIR/../$UNAME/
+#cp bcm2835_raw_uart.ko $CURRDIR/../$UNAME/
+cp eq3_char_loop.ko $CURRDIR/../$UNAME/
 
 # Check modules
 echo
@@ -202,9 +205,11 @@ echo "*************************************************************"
 echo
 echo "Current kernel version is: $(uname -r)"
 echo
-modinfo ../$UNAME/bcm2835_raw_uart.ko
+modinfo $CURRDIR/../$UNAME/generic_raw_uart.ko
+#modinfo $CURRDIR/../$UNAME/bcm2835_raw_uart.ko
 echo
-modinfo ../$UNAME/eq3_char_loop.ko
+modinfo $CURRDIR/../$UNAME/eq3_char_loop.ko
+
 
 
 
@@ -216,4 +221,4 @@ echo "*************************************************************"
 echo "Reset permissions..."
 echo "*************************************************************"
 echo
-chown -R loxberry:loxberry ../../kernel/
+chown -R loxberry:loxberry $CURRDIR/../*
