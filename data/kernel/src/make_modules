@@ -27,6 +27,14 @@ echo
 
 FIRMWAREREV=$(cat /boot/.firmware_revision)
 
+# Install needed packages for kernel comilation
+echo
+echo "*************************************************************"
+echo "Install needed packages..."
+echo "*************************************************************"
+echo
+apt-get -y install bison flex chrpath gawk texinfo libsdl1.2-dev whiptail diffstat cpio libssl-dev
+
 # Prepare folders
 echo
 echo "*************************************************************"
