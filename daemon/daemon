@@ -93,8 +93,8 @@ if [[ ! -e "/lib/modules/$(uname -r)/extra/generic_raw_uart.ko" ]]; then
 	fi
 fi
 
-#modprobe -v generic_raw_uart
-#modprobe -v eq3_char_loop
+modprobe -v generic_raw_uart
+modprobe -v eq3_char_loop
 
 #
 # Finding all installed hardware modules and initialize them
