@@ -9,6 +9,8 @@ obj-m += rpi_rf_mod_led.o
 obj-m += dummy_rx8130.o
 obj-m += led_trigger_timer.o
 obj-m += hb_rf_usb.o
+obj-m += hb_rf_usb_2.o
+obj-m += hb_rf_eth.o
 obj-m += rtc-rx8130.o
 
 ifeq ($(KERNELRELEASE),)
@@ -17,6 +19,11 @@ endif
 
 ifeq ($(KERNEL_DIR),)
   KERNEL_DIR := /lib/modules/$(KERNELRELEASE)/build
+endif
+
+include $(KERNEL_DIR)/scripts/Kbuild.include
+ifeq ($(call cc-option-yn,-mstack-protector-guard=sysreg -mstack-protector-guard-reg=sp_el0 -mstack-protector-guard-offset=0),n)
+        KBUILD_CFLAGS += -DPIVCCU_CC_HAS_NO_STACKPROTECTOR_SYSREG
 endif
 
 all:

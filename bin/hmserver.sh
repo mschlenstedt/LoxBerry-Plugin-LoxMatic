@@ -2,13 +2,13 @@
 
 PLUGINNAME=REPLACELBPPLUGINDIR
 
-#if [ "$UID" -ne 0 ]; then
-#	echo "This script has to be run as root."
-#	exit
-#fi
+if [ "$UID" -ne 0 ]; then
+	echo "This script has to be run as root."
+	exit
+fi
 
 # Source HM environment
-[[ -r REPLACELBPCONFIGDIR/hm_env ]] && . REPLACELBPCONFIGDIR/hm_env
+[[ -r $LBPCONFIG/$PLUGINNAME/hm_env ]] && . $LBPCONFIG/$PLUGINNAME/hm_env
 
 # Kill existing HMServer
 if pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
@@ -21,11 +21,11 @@ fi
 . $LBHOMEDIR/libs/bashlib/loxberry_log.sh
 PACKAGE=$PLUGINNAME
 NAME=hmserver
-FILENAME=REPLACELBPLOGDIR/hmserver.log
+FILENAME=$LBPLOG/$PLUGINNAME/hmserver.log
 APPEND=1
 LOGSTART "HMServer started."
 LOGOK "HMServer started."
-cat REPLACELBPCONFIGDIR/hm_env >> REPLACELBPLOGDIR/hmserver.log
+cat $LBPCONFIG/$PLUGINNAME/hm_env >> $LBPLOG/$PLUGINNAME/hmserver.log
 # skip this startup if not in normal mode
 if [[ "${HM_MODE}" != "NORMAL" ]]; then
 	LOGERR "HM environment was not started successfully"
@@ -49,14 +49,14 @@ fi
 
 # make sure the Adapter Port setting is correct
 # when generating /var/etc/crRFD.conf
-sed -i -e "s|^Adapter\.1\.Port=/dev/.*$|Adapter.1.Port=${HM_SERVER_PORT}|" REPLACELBPCONFIGDIR/crRFD.conf 
+sed -i -e "s|^Adapter\.1\.Port=/dev/.*$|Adapter.1.Port=${HM_SERVER_PORT}|" $LBPCONFIG/$PLUGINNAME/crRFD.conf 
 
 HM_SERVER=/opt/HMServer/HMIPServer.jar
-HM_SERVER_ARGS="REPLACELBPCONFIGDIR/crRFD.conf REPLACELBPCONFIGDIR/HMServer.conf"
+HM_SERVER_ARGS="$LBPCONFIG/$PLUGINNAME/crRFD.conf $LBPCONFIG/$PLUGINNAME/HMServer.conf"
 
-DEBUG=$(jq -r '.Debug' REPLACELBPCONFIGDIR/loxmatic.json)
+DEBUG=$(jq -r '.Debug' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
 if [ "$DEBUG" = "true" ] || [ "$DEBUG" = "1" ]; then
-	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://REPLACELBPCONFIGDIR/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} >> REPLACELBPLOGDIR/hmserver.log &
+	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://$LBPCONFIG/$PLUGINNAME/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} >> $LBPLOG/$PLUGINNAME/hmserver.log &
 else
-	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://REPLACELBPCONFIGDIR/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} > /dev/null &
+	java -Xmx128m -Dos.arch=arm -Dlog4j.configuration=file://$LBPCONFIG/$PLUGINNAME/log4j.xml -Dfile.encoding=ISO-8859-1 -Dgnu.io.rxtx.SerialPorts=${HM_SERVER_PORT} -jar ${HM_SERVER} ${HM_SERVER_ARGS} > /dev/null &
 fi

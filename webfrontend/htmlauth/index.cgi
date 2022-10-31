@@ -155,7 +155,7 @@ sub print_form
 
         $navbar{90}{Name} = $SL{'SETTINGS.LABEL_NAV_LOGFILES'};
 	$navbar{90}{URL} =  LoxBerry::Web::loglist_url();
-        $navbar{90}{target} = '_blank';
+	#$navbar{90}{target} = '_blank';
 
 	# Template
         LoxBerry::Web::lbheader($plugintitle, $helplink, $helptemplate);

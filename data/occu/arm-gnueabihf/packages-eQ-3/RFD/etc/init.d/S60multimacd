@@ -8,21 +8,17 @@ CFG_TEMPLATE_DIR=/etc/config_templates
 PIDFILE=/var/run/multimacd.pid
 
 update() {        
-	if [ ! -e /etc/config/no-coprocessor-update ] ; then
-		echo "checking if firmware update is needed..."
-		/bin/eq3configcmd update-coprocessor -p "/dev/mxs_auart_raw.0" -u
-		if ! [ $? -eq 0 ] ; then
-			echo "error while updating coprocessor, recovering..."
-			avrprog --bo
-			/bin/eq3configcmd update-coprocessor -p "/dev/mxs_auart_raw.0" -u -f
-			sleep 1
-		else
-			echo "done"
-			sleep 1
-		fi
+	echo "checking if firmware update is needed..."
+	/bin/eq3configcmd update-coprocessor -p "/dev/mxs_auart_raw.0" -u
+	if ! [ $? -eq 0 ] ; then
+		echo "error while updating coprocessor, recovering..."
+		avrprog --bo
+		/bin/eq3configcmd update-coprocessor -p "/dev/mxs_auart_raw.0" -u -f
+		sleep 1
 	else
-		echo "firmware update disabled"
-	fi
+		echo "done"
+		sleep 1
+	fi	
 }
 check_bo(){
 	avrprog --devinfo | grep -q ec,fd,da,ef
@@ -57,28 +53,24 @@ init() {
 }
 
 waitStartupComplete() {
-    echo -n "Waiting for multimacd to get ready"
-	STEPS=5
-    for i in $(seq 1 $STEPS)
-    do
-		sleep 2
-		echo -n "."
-        MMDSTATUSPID=`cat /var/status/multimacd.status 2>/dev/null`
-        MMDPID=`pidof multimacd`
-        if [ $MMDSTATUSPID = $MMDPID ] 
-		then
-            echo "multimacd is ready now."
-            break
-		fi 
-        if [ $i -eq $STEPS ]
-		then
-            echo "Timeout while waiting for multimacd to get ready."
-        fi
-    done
+  STEPS=5
+  for i in $(seq 1 ${STEPS}); do
+    sleep 2
+    echo -n "."
+    MMDSTATUSPID=$(cat /var/status/multimacd.status 2>&1)
+    MMDPID=$(pidof multimacd)
+    if [[ "${MMDSTATUSPID}" == "${MMDPID}" ]]; then
+      echo "OK"
+      break
+    fi
+    if [[ ${i} -eq ${STEPS} ]]; then
+      echo "ERROR"
+    fi
+  done
 }
 
 start() {
-	echo "Starting multimacd: "
+	echo -n "Starting multimacd: "
 	init
 	if [ ! -e $PIDFILE ] ; then
 		check_bo

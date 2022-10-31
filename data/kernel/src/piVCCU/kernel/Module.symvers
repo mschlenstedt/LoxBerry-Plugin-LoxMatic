@@ -1,0 +1,7 @@
+0x637dfe89	generic_raw_uart_remove	/opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/generic_raw_uart	EXPORT_SYMBOL
+0x52cfb586	generic_raw_uart_set_connection_state	/opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/generic_raw_uart	EXPORT_SYMBOL
+0x6bc4a963	generic_raw_uart_verify_dkey	/opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/generic_raw_uart	EXPORT_SYMBOL
+0xbdfc5d9b	generic_raw_uart_tx_queued	/opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/generic_raw_uart	EXPORT_SYMBOL
+0x5005ad34	generic_raw_uart_rx_completed	/opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/generic_raw_uart	EXPORT_SYMBOL
+0xdb000c0a	generic_raw_uart_handle_rx_char	/opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/generic_raw_uart	EXPORT_SYMBOL
+0x77fddc9c	generic_raw_uart_probe	/opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/generic_raw_uart	EXPORT_SYMBOL

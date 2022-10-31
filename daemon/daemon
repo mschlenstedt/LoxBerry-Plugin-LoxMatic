@@ -13,6 +13,7 @@ HM_KERNEL=$(uname -r)
 # Libs for eq3configcmd
 export HM_HOME=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3
 export LD_LIBRARY_PATH=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/LinuxBasis/lib/:$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/RFD/lib
+export HM_BIN=$HM_HOME/LinuxBasis/bin
 
 # Source Notify lib
 . $LBHOMEDIR/libs/bashlib/notify.sh
@@ -75,24 +76,7 @@ function identify_hw()
 #
 LOGINF "Identifying Homematic Hardware..."
 
-# Load EQ3 / RAW UART kernel modules # THIS IS FOR COMPATIBILITY WITH OLDER KERNELS
-#if [[ ! -e "/lib/modules/$(uname -r)/extra/bcm2835_raw_uart.ko" ]]; then
-#	if [[ -e $LBPDATA/$PLUGINNAME/kernel/$(uname -r) ]]; then
-#		LOGINF "(Re-)Installing Kernel modules..."
-#		mkdir -v -p /lib/modules/$(uname -r)/extra
-#		cp -v $LBPDATA/$PLUGINNAME/kernel/$(uname -r)/* /lib/modules/$(uname -r)/extra
-#		depmod -a
-#	else 
-#		notify $PLUGINNAME daemon "Cannot find the needed kernel modules. Giving up. Please update LoxBerry AND the Plugin to the latest versions." err > /dev/null 2>&1
-#		LOGERR "Cannot find the needed kernel modules. Giving up."
-#		LOGEND
-#		HM_MODE="ERROR"
-#		set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
-#		exit 1;
-#	fi
-#fi
-
-# Load EQ3 / RAW UART kernel modules
+# Reinstalling Kernel MOdules
 if [[ ! -e "/lib/modules/$(uname -r)/extra/generic_raw_uart.ko" ]]; then
 	if [[ -e $LBPDATA/$PLUGINNAME/kernel/$(uname -r) ]]; then
 		LOGINF "(Re-)Installing Kernel modules..."
@@ -104,68 +88,175 @@ if [[ ! -e "/lib/modules/$(uname -r)/extra/generic_raw_uart.ko" ]]; then
 		LOGERR "Cannot find the needed kernel modules. Giving up."
 		LOGEND
 		HM_MODE="ERROR"
-		set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
+		set | grep '^HM_' > $LBPCONFIG/$PLUGINNAME/hm_env
 		exit 1;
 	fi
 fi
 
-# Loading Kernel modules
-LOGINF "Loading Kernel modules..."
-if [[ -e "/lib/modules/$(uname -r)/extra/generic_raw_uart.ko" ]]; then
-	modprobe -v generic_raw_uart >> ${FILENAME} 2>&1
-else
-	modprobe -v bcm2835_raw_uart >> ${FILENAME} 2>&1
-fi
-modprobe -v eq3_char_loop >> ${FILENAME} 2>&1
-rmmod -v rtc_ds1307 >> ${FILENAME} 2>&1
-
-# load the common i2c kernel modules
-if [[ -e REPLACELBCONFIGDIR/is_raspberry.cfg ]];  then
-	modprobe -v i2c_bcm2835 >> ${FILENAME} 2>&1
-	modprobe -v i2c_bcm2708 >> ${FILENAME} 2>&1
-fi
-modprobe -v i2c_dev >> ${FILENAME} 2>&1
-
-# check for RX8130-CE RTC clock at 0x32 (Epson RX8130CE) which
-# is the RPI-RF-MOD onboard RTC.
-i2cget -y 1 0x32 0x32 2>/dev/null >/dev/null
-if [[ $? -eq 0 ]]; then
-	i2cset -y 1 0x32 0x1f 0x30 >/dev/null # turn on coldcap charging
-	modprobe i2c:rx8130 >> ${FILENAME} 2>&1
-	if [[ $? -eq 0 ]]; then
-		HM_RTC="rx8130"
-		[[ -c /dev/rtc0 ]] || echo rx8130 0x32 >/sys/class/i2c-dev/i2c-1/device/new_device
-		[[ -c /dev/rtc0 ]] || echo 0x32 >/sys/class/i2c-dev/i2c-1/device/delete_device
-
-		# we found a RX8130, thus we assume the RPI-RF-MOD to
-		# be present, thus we setup the LED GPIOs to OUT
-		if [[ -c /dev/rtc0 ]]; then
-			# setup the LEDs to show a constant yellow light
-			echo default-on >/sys/class/leds/rpi_rf_mod\:green/trigger
-			echo default-on >/sys/class/leds/rpi_rf_mod\:red/trigger
-			echo none >/sys/class/leds/rpi_rf_mod\:blue/trigger
-		fi
-	fi
-fi
-
-# until we have a proper tool to identify the
-# type of the GPIO rf module we assume a RPI-RF-MOD
-# as soon as we have found a rx8130 RTC clock
-if [[ "${HM_RTC}" == "rx8130" ]];  then
-	LOGINF "We found a RTC RX8130. This must be a RPI-RF-MOD Module."
-	HM_HMRF_DEV="RPI-RF-MOD"
-	HM_HMIP_DEV="RPI-RF-MOD"
-else
-	LOGINF "We think you have a HM-MOD-RPI-PCB Module. But we will now check also for USB devices. Please wait."
-	HM_HMRF_DEV="HM-MOD-RPI-PCB"
-	HM_HMIP_DEV="HM-MOD-RPI-PCB"
-fi
+#modprobe -v generic_raw_uart
+#modprobe -v eq3_char_loop
 
 #
-# Check here for any USB devices
+# Finding all installed hardware modules and initialize them
+# Taken from https://github.com/alexreinert/debmatic/blob/master/debmatic/usr/share/debmatic/bin/detect_hardware.inc
+# Thanks to Alexander Reinert!
 #
 
-# To be added here...
+if [ -z "$DEBMATIC_ADDRESS" ]; then
+  DEBMATIC_ADDRESS=`shuf -i 1-16777215 -n 1`
+  DEBMATIC_ADDRESS=`printf "0x%06x" $DEBMATIC_ADDRESS`
+fi
+
+LOGINF "Scanning for USB hardware..."
+for syspath in $(find /sys/bus/usb/devices/); do
+  if [ ! -e $syspath/idVendor ]; then
+    continue
+  fi
+
+  USBID="`cat $syspath/idVendor`:`cat $syspath/idProduct`"
+
+  case "$USBID" in
+    "0403:6f70")
+      KMOD="hb_rf_usb"
+      LOGINF "Found hb_rf_usb Module."
+      ;;
+    "10c4:8c07" | "1b1f:c020")
+      KMOD="hb_rf_usb_2"
+      LOGINF "Found hb_rf_usb_2 Module."
+      ;;
+    *)
+      continue
+      ;;
+  esac
+
+  if [ $(lsmod | grep -w $KMOD | wc -l) -eq 0 ]; then
+    modprobe -q $KMOD
+
+    for try in {0..30}; do
+      lsmod | grep -q -w $KMOD && RC=$? || RC=$?
+      if [ $RC -eq 0 ]; then
+        break
+      fi
+      sleep 1
+    done
+  fi
+
+  for try in {0..30}; do
+    if [ $(find $syspath/ -mindepth 2 -name driver | wc -l) -ne 0 ]; then
+      break
+    fi
+    sleep 1
+  done
+done
+
+for dev_no in {0..5}
+do
+  if [ $dev_no -eq 0 ]; then
+    UART_DEV="raw-uart"
+  else
+    UART_DEV="raw-uart$dev_no"
+  fi
+
+  if [ -e "/sys/class/raw-uart/$UART_DEV" ]; then
+    if [ ! -e "/dev/$UART_DEV" ]; then
+      mknod "/dev/$UART_DEV" c `cat /sys/class/raw-uart/$UART_DEV/dev | tr ':' ' '`
+    fi
+
+    echo 1 > /sys/class/raw-uart/$UART_DEV/reset_radio_module
+
+    MODULE_INFO=`$LBPBIN/$PLUGINNAME/detect_radio_module /dev/$UART_DEV` && RC=$? || RC=$?
+    if [ $RC -eq 0 ]; then
+      DEV_TYPE=`echo $MODULE_INFO | cut -d' ' -f1`
+      DEV_SERIAL=`echo $MODULE_INFO | cut -d' ' -f2`
+
+      HM_HOST_GPIO_UART="/dev/$UART_DEV"
+
+      HM_HMIP_DEV="$DEV_TYPE"
+      HM_HMIP_DEVNODE="/dev/$UART_DEV"
+      HM_HMIP_SERIAL="$DEV_SERIAL"
+      HM_HMIP_VERSION=`echo $MODULE_INFO | cut -d' ' -f6`
+      HM_HMIP_SGTIN=`echo $MODULE_INFO | cut -d' ' -f3`
+      HM_HMIP_ADDRESS=`echo $MODULE_INFO | cut -d' ' -f5`
+
+      if [ -e "/sys/class/raw-uart/$UART_DEV/device_type" ]; then
+        HM_HOST_UART_DEVICE_TYPE=`cat /sys/class/raw-uart/$UART_DEV/device_type`
+        HM_HMIP_DEVTYPE="$HM_HOST_UART_DEVICE_TYPE"
+      fi
+
+      if [ "$DEV_TYPE" != "HMIP-RFUSB-TK" ]; then
+        HM_HMRF_DEV="$HM_HMIP_DEV"
+        HM_HMRF_DEVNODE="$HM_HMIP_DEVNODE"
+        HM_HMRF_SERIAL="$HM_HMIP_SERIAL"
+        HM_HMRF_VERSION="$HM_HMIP_VERSION"
+        HM_HMRF_ADDRESS=`echo $MODULE_INFO | cut -d' ' -f4`
+        HM_HMRF_DEVTYPE="$HM_HMIP_DEVTYPE"
+      fi
+
+      if [ "$HM_HMRF_ADDRESS" == "0x000000" ]; then
+        HM_HMRF_ADDRESS="$DEBMATIC_ADDRESS"
+      fi
+
+      break
+    fi
+  fi
+done
+
+for syspath in $(find /sys/bus/usb/devices/); do
+  if [ -e $syspath/idVendor ] && [ "`cat $syspath/idVendor`" == "1b1f" ] && [ "`cat $syspath/idProduct`" == "c00f" ]; then
+    HM_HMRF_DEV="HM-CFG-USB-2"
+    HM_HMRF_DEVNODE="/dev/$(udevadm info -q name -p $syspath)"
+
+    if [ ! -e "$HM_HMRF_DEVNODE" ]; then
+      mkdir -p `dirname $HM_HMRF_DEVNODE`
+      mknod "$HM_HMRF_DEVNODE" c `cat $syspath/dev | tr ':' ' '`
+    fi
+
+    HM_HMRF_SERIAL=`cat $syspath/serial | tr '[:lower:]' '[:upper:]'`
+    HM_HMRF_VERSION=""
+    HM_HMRF_ADDRESS="$DEBMATIC_ADDRESS"
+    HM_HMRF_DEVTYPE="USB"
+    break
+  fi 
+done
+
+#
+# Loading LED modules
+# Taken from https://github.com/alexreinert/debmatic/blob/master/debmatic/usr/share/debmatic/bin/load_led_modules.sh
+# Thanks to Alexander Reinert!
+#
+
+RED_PIN=0
+GREEN_PIN=0
+BLUE_PIN=0
+
+HMIP_RAW_UART="$(basename $HM_HMIP_DEVNODE)"
+
+if [ "$HM_HMRF_DEV" == "RPI-RF-MOD" ]; then
+  if [ -e "/sys/module/generic_raw_uart/parameters/load_dummy_rx8130_module" ]; then
+    echo 1 > /sys/module/generic_raw_uart/parameters/load_dummy_rx8130_module
+  else
+    modprobe dummy_rx8130
+  fi
+
+  if [ -e "/sys/class/raw-uart/$HMIP_RAW_UART/red_gpio_pin" ]; then
+    RED_PIN=`cat /sys/class/raw-uart/$HMIP_RAW_UART/red_gpio_pin`
+    GREEN_PIN=`cat /sys/class/raw-uart/$HMIP_RAW_UART/green_gpio_pin`
+    BLUE_PIN=`cat /sys/class/raw-uart/$HMIP_RAW_UART/blue_gpio_pin`
+  fi
+fi
+
+modprobe -q ledtrig-default-on || true
+modprobe -q ledtrig-timer || modprobe -q led_trigger_timer || true
+
+if [ -w "/sys/module/rpi_rf_mod_led/parameters/red_gpio_pin" ]; then
+  echo "$RED_PIN" > /sys/module/rpi_rf_mod_led/parameters/red_gpio_pin
+  echo "$GREEN_PIN" > /sys/module/rpi_rf_mod_led/parameters/green_gpio_pin
+  echo "$BLUE_PIN" > /sys/module/rpi_rf_mod_led/parameters/blue_gpio_pin
+else
+  modprobe rpi_rf_mod_led red_gpio_pin=$RED_PIN green_gpio_pin=$GREEN_PIN blue_gpio_pin=$BLUE_PIN || true
+fi
+
+#set | grep '^HM_' > $LBPCONFIG/$PLUGINNAME/hm_env
 
 }
 
@@ -177,159 +268,65 @@ function init_hw()
 
 #
 # Init Hardware
+# Taken from https://github.com/alexreinert/debmatic/blob/master/debmatic/usr/share/debmatic/bin/update_rf_firmware.sh
+# Thanks to Alexander Reinert!
 #
 
-# set default HM_HOST_GPIO_UART
-if [[ -c /dev/raw-uart ]]; then
-	LOGINF "GPIO UART is /dev/raw-uart"
-	HM_HOST_GPIO_UART="/dev/raw-uart"
-else
-	if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
-		LOGINF "GPIO UART is /dev/ttyAMA0"
-		HM_HOST_GPIO_UART="/dev/ttyAMA0"
-	else
-		LOGINF "GPIO UART is /dev/ttyS0"
-		HM_HOST_GPIO_UART="/dev/ttyS0"
-	fi
+JAVA_HOME=$(update-java-alternatives --jre-headless --list | grep "\\W\(108\|111\|211\|180\)[0-9]\+\\W" | tr -s " " | sort -k2 | tail -1 | cut -d" " -f3)
+
+if [ "$HM_HMIP_DEV" == "HM-MOD-RPI-PCB" ]; then
+  NEW_VERSION=`grep 'dualcopro_si1002_update_blhm.eq3' /firmware/HM-MOD-UART/fwmap | awk '{print $3}'`
+
+  if [ -n "$NEW_VERSION" ] && [ "$NEW_VERSION" != "$HM_HMIP_VERSION" ]; then
+    LOGINF "Starting Update of HM-MOD-RPI-PCB to Version $NEW_VERSION..."
+
+    $HM_BIN/eq3configcmd update-coprocessor -p $HM_HMIP_DEVNODE -t HM-MOD-UART -u -d /firmware/HM-MOD-UART
+
+    HM_HMIP_VERSION=`$HM_BIN/eq3configcmd update-coprocessor -p $HM_HMIP_DEVNODE -t HM-MOD-UART -c -v 2>&1 | grep "Version:" | cut -d' ' -f5`
+
+    LOGINF "Version after flashing is: $HM_HMIP_VERSION"
+
+    if [ "$HM_HMIP_DEV" == "$HM_HMRF_DEV" ]; then
+      HM_HMRF_VERSION=$HM_HMIP_VERSION
+    fi
+
+    #set | grep '^HM_' > $LBPCONFIG/$PLUGINNAME/hm_env
+
+    if [ "$NEW_VERSION" != "$HM_HMIP_VERSION" ]; then
+      LOGERR "Failed to Update HM-MOD-RPI-PCB to Version $NEW_VERSION."
+    else
+      LOGOK "Successfully updated HM-MOD-RPI-PCB to Version $NEW_VERSION."
+    fi
+  elif [ -n "$NEW_VERSION" ]; then
+    LOGOK "HM-MOD-RPI-PCB has already desired Version $NEW_VERSION..."
+  fi
 fi
 
-# Set correct reset GPIO PIN
-if [[ -e $LBHOMEDIR/config/system/is_raspberry.cfg ]];  then
-	LOGINF "GPIO Reset Pin is 18."
-	HM_HOST_GPIO_RESET=18  # GPIO18/GPIO.1 (pin 12)
-else
-	LOGINF "Haven't set a GPIO Reset Pin."
-	HM_HOST_GPIO_RESET=""
+if [ "$HM_HMIP_DEV" == "RPI-RF-MOD" ]; then
+  NEW_VERSION=`ls /firmware/RPI-RF-MOD/dualcopro_update_blhmip-*.eq3 | sed 's/.*-\(.*\)\.eq3/\1/' | sort | tail -1`
+
+  if [ -n "$NEW_VERSION" ] && [ "$NEW_VERSION" != "$HM_HMIP_VERSION" ]; then
+    LOGINF "Starting update of RPI-RF-MOD to Version $NEW_VERSION..."
+
+    HM_HMIP_VERSION=`JAVA_HOME=$JAVA_HOME $JAVA_HOME/bin/java $JAVA_ARGS -Dgnu.io.rxtx.SerialPorts=$HM_HMIP_DEVNODE -jar /opt/HmIP/hmip-copro-update.jar -p $HM_HMIP_DEVNODE -o -f /firmware/RPI-RF-MOD/dualcopro_update_blhmip-$NEW_VERSION.eq3 2>/dev/null | grep "Version:" | cut -d' ' -f5`
+
+    LOGINF "Version after flashing is: $HM_HMIP_VERSION"
+
+    if [ "$HM_HMIP_DEV" == "$HM_HMRF_DEV" ]; then
+      HM_HMRF_VERSION=$HM_HMIP_VERSION
+    fi
+
+    #set | grep '^HM_' > $LBPCONFIG/$PLUGINNAME/hm_env
+
+    if [ "$NEW_VERSION" != "$HM_HMIP_VERSION" ]; then
+      LOGERR "Failed to update RPI-RF-MOD to Version $NEW_VERSION."
+    else
+      LOGOK "Successfully updated RPI-RF-MOD to Version $NEW_VERSION."
+    fi
+  elif [ -n "$NEW_VERSION" ]; then
+    LOGOK "RPI-RF-MOD has already desired Version $NEW_VERSION..."
+  fi
 fi
-
-# Raw-UART Devices
-if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
-   [[ "${HM_HMIP_DEV}" == "HM-MOD-RPI-PCB" ]] ||
-   [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
-   [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
-	LOGINF "HMRF dev node is ${HM_HOST_GPIO_UART}, HMIP dev node is ${HM_HOST_GPIO_UART}."
-	HM_HMRF_DEVNODE="${HM_HOST_GPIO_UART}"
-	HM_HMIP_DEVNODE="${HM_HOST_GPIO_UART}"
-fi
-
-# also set tty device to low_latency mode (if possible)
-if [[ -c "${HM_HOST_GPIO_UART}" ]]; then
-	LOGINF "Setting serial port to low latency."
-	/bin/setserial ${HM_HOST_GPIO_UART} low_latency >> ${FILENAME} 2>&1
-fi
-
-# Reset Module
-if [[ -n "${HM_HOST_GPIO_RESET}" ]];  then
-	LOGINF "Resetting Module..."
-	echo ${HM_HOST_GPIO_RESET} > /sys/class/gpio/export
-	echo out > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/direction
-	echo 0 > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/value
-	sleep 0.1
-	echo 1 > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/value
-	sleep 0.1
-	echo in > /sys/class/gpio/gpio${HM_HOST_GPIO_RESET}/direction
-fi
-
-# Do Firmware Upgrade after first reboot
-if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
-   [[ "${HM_HMIP_DEV}" == "HM-MOD-RPI-PCB" ]]; then
-
-	# do firmware upgrade after first reboot
-	# Start Firmware Upgrade
-	if [[ -e "$LBPCONFIG/$PLUGINNAME/do_firmwareupgrade" ]]; then
-		notify $PLUGINNAME daemon "Firmwareupdate of your Homematic Module HM-MOD-RPI-PCB (if any) was initialized." > /dev/null 2>&1
-		LOGINF "Doing/Trying firmware upgrade..."
-		${HM_HOME}/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -l 0 -c -t HM-MOD-UART -d $LBPDATA/$PLUGINNAME/occu/firmware/HM-MOD-UART -u >> ${FILENAME} 2>&1
-		rm $LBPCONFIG/$PLUGINNAME/do_firmwareupgrade
-	fi
-fi
-if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
-   [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
-
-	# do firmware upgrade after first reboot
-	# Start Firmware Upgrade
-	if [[ -e "$LBPCONFIG/$PLUGINNAME/do_firmwareupgrade" ]]; then
-		notify $PLUGINNAME daemon "Firmwareupdate of your Homematic Module RPI-RF-MOD was initialized." > /dev/null 2>&1
-		LOGINF "Doing/Trying firmware upgrade..."
-		/usr/bin/java -Dgnu.io.rxtx.SerialPorts=${HM_HOST_GPIO_UART} -jar /opt/HmIP/hmip-copro-update.jar -p ${HM_HOST_GPIO_UART} -o -f $LBPDATA/$PLUGINNAME/occu/firmware/RPI-RF-MOD/dualcopro_update_blhmip-*.eq3 >> ${FILENAME} 2>&1
-		rm $LBPCONFIG/$PLUGINNAME/do_firmwareupgrade
-	fi
-fi
-
-#
-# Query RF Parameters
-#
-
-# 1. query for HM-MOD-RPI-PCB parameters
-if [[ "${HM_HMRF_DEV}" == "HM-MOD-RPI-PCB" ]] ||
-   [[ "${HM_HMIP_DEV}" == "HM-MOD-RPI-PCB" ]]; then
-
-	# use eq3configcmd to query for the default rf address and if it is empty
-	# or 0x00ffff there is either no HM-MOD-RPI-PCB or it is a RPI-RF-MOD
-	RF_ADDRESS=$($HM_HOME/LinuxBasis/bin/eq3configcmd read-default-rf-address -f ${HM_HOST_GPIO_UART} -h 2>&1 | grep "^0x" | tr -d '[:space:]')
-	if [[ -n "${RF_ADDRESS}" ]] && [[ "${RF_ADDRESS}" != "0x00ffff" ]]; then
-		RF_SGTIN=$($HM_HOME/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -t HM-MOD-UART -c -sg 2>&1 | sed -n 's/.*SGTIN: \([0-9A-Fa-f]\{24\}\).*/\1/p')
-		RF_SERIAL=$($HM_HOME/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -t HM-MOD-UART -c -se 2>&1 | grep "SerialNumber:" | cut -d' ' -f5 | tr -d '[:space:]')
-		RF_VERSION=$($HM_HOME/LinuxBasis/bin/eq3configcmd update-coprocessor -p ${HM_HOST_GPIO_UART} -t HM-MOD-UART -c -v 2>&1 | grep "Version:" | cut -d' ' -f5 | tr -d '[:space:]')
-		HM_HMRF_SERIAL=${RF_SERIAL}
-		HM_HMRF_VERSION=${RF_VERSION}
-		HM_HMRF_ADDRESS=${RF_ADDRESS}
-		HM_HMIP_SERIAL=${RF_SERIAL}
-		HM_HMIP_VERSION=${RF_VERSION}
-		HM_HMIP_ADDRESS=${RF_ADDRESS}
-		HM_HMIP_SGTIN=${RF_SGTIN}
-
-	else
-		HM_HMRF_DEV=
-		HM_HMRF_SERIAL=
-		HM_HMRF_VERSION=
-		HM_HMRF_ADDRESS=
-		HM_HMIP_DEV=
-		HM_HMIP_SERIAL=
-		HM_HMIP_VERSION=
-		HM_HMIP_ADDRESS=
-		HM_HMIP_SGTIN=
-	fi
-fi
-
-# 2. query for RPI-RF-MOD parameters
-if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]] ||
-   [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
-
-	# use hmip-copro-update only to query all rf module related info (eq3configcmd is not supported for RPI-RF-MOD)
-	RF_INFO=$(/usr/bin/java -Dgnu.io.rxtx.SerialPorts=${HM_HOST_GPIO_UART} -jar /opt/HmIP/hmip-copro-update.jar -p ${HM_HOST_GPIO_UART} -v -a 2>&1)
-	RF_SGTIN=$(echo ${RF_INFO} | sed -n 's/.*SGTIN = \([0-9A-Fa-f]\{24\}\).*/\1/p')
-	RF_VERSION=$(echo ${RF_INFO} | sed -n 's/.*Application version = \([0-9]\+\.[0-9]\+\.[0-9]\+\).*/\1/p')
-	RF_ADDRESS=$(echo ${RF_INFO} | sed -n 's/.*Radio address = \([0-9A-F]\{6\}\).*/0x\1/p')
-
-	if [[ -n "${RF_ADDRESS}" ]] || [[ -n "${RF_SGTIN}" ]]; then
-		# use the last 10 chars of the SGTIN as the serial number of the rf module
-		RF_SERIAL=$(echo -n ${RF_SGTIN} | tail -c 10)
-
-		if [[ "${HM_HMRF_DEV}" == "RPI-RF-MOD" ]]; then
-			HM_HMRF_SERIAL=${RF_SERIAL}
-			HM_HMRF_VERSION=${RF_VERSION}
-			HM_HMRF_ADDRESS=${RF_ADDRESS}
-		fi
-
-		if [[ "${HM_HMIP_DEV}" == "RPI-RF-MOD" ]]; then
-			HM_HMIP_SERIAL=${RF_SERIAL}
-			HM_HMIP_VERSION=${RF_VERSION}
-			HM_HMIP_ADDRESS=${RF_ADDRESS}
-			HM_HMIP_SGTIN=${RF_SGTIN}
-		fi
-	else
-			HM_HMRF_DEV=
-			HM_HMRF_SERIAL=
-			HM_HMRF_VERSION=
-			HM_HMRF_ADDRESS=
-			HM_HMIP_DEV=
-			HM_HMIP_SERIAL=
-			HM_HMIP_VERSION=
-			HM_HMIP_ADDRESS=
-			HM_HMIP_SGTIN=
-	fi
-fi								
 
 }
 
@@ -340,26 +337,27 @@ function start_hm()
 {
 
 # What is enabled?
-RFDENABLED=$(jq -r '.EnableRFD' REPLACELBPCONFIGDIR/loxmatic.json)
-HMIPSERVERENABLED=$(jq -r '.EnableHMIPSERVER' REPLACELBPCONFIGDIR/loxmatic.json)
-HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' REPLACELBPCONFIGDIR/loxmatic.json)
+RFDENABLED=$(jq -r '.EnableRFD' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
+HMIPSERVERENABLED=$(jq -r '.EnableHMIPSERVER' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
+HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
 
 # Should multimacd be started: Needed if RFD or HMIPServer should be started
 if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 	LOGINF "Starting MULTIMACD..."
-	REPLACELBPBINDIR/multimacd.sh > /dev/null 2>&1
+	$LBPBIN/$PLUGINNAME/multimacd.sh > /dev/null 2>&1
 	STEPS=150
 	for i in $(seq 1 ${STEPS}); do
 		sleep 1
 		echo -n "."
 		if pgrep -f bin/multimacd > /dev/null 2>&1 ; then
-			LOGOK "OK"
+			LOGOK "Multimacd started successfully"
 			MULTIMACDPID=$(pgrep -f bin/multimacd)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
-			LOGERR "ERROR"
+			LOGERR "ERROR starting multimacd"
 			MULTIMACDPID="None"
+			break
 		fi
 	done
 fi
@@ -367,20 +365,21 @@ fi
 # Should RFD be started
 if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]];  then
 	LOGINF "Starting RFD..."
-	REPLACELBPBINDIR/rfd.sh > /dev/null 2>&1
+	$LBPBIN/$PLUGINNAME/rfd.sh > /dev/null 2>&1
 	STEPS=150
 	for i in $(seq 1 ${STEPS}); do
 		sleep 1
 		echo -n "."
 		if lsof -Pi :2001 -sTCP:LISTEN -t > /dev/null 2>&1 ; then
 		#if pgrep -f bin/rfd > /dev/null 2>&1 ; then
-			LOGOK "OK"
+			LOGOK "RFD started successfully"
 			RFDPID=$(pgrep -f bin/rfd)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
-			LOGERR "ERROR"
+			LOGERR "ERROR starting RFD"
 			RFDPID="None"
+			break
 		fi
 	done
 fi
@@ -388,20 +387,21 @@ fi
 # Should HMServer be started
 if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 	LOGINF "Starting HMSERVER..."
-	REPLACELBPBINDIR/hmserver.sh > /dev/null 2>&1
+	$LBPBIN/$PLUGINNAME/hmserver.sh > /dev/null 2>&1
 	STEPS=150
 	for i in $(seq 1 ${STEPS}); do
 		sleep 1
 		echo -n "."
 		if lsof -Pi :2010 -sTCP:LISTEN -t > /dev/null 2>&1 ; then
 		#if pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
-			LOGOK "OK"
+			LOGOK "HMServer started successfully"
 			HMSERVERPID=$(pgrep -f HMIPServer.jar)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
-			LOGERR "ERROR"
+			LOGERR "ERROR starting HMServer"
 			HMSERVERPID="None"
+			break
 		fi
 	done
 fi
@@ -409,19 +409,20 @@ fi
 # Should HM2MQTT be started
 if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 	LOGINF "Starting HM2MQTT..."
-	sudo -n -u loxberry REPLACELBPBINDIR/hm2mqtt.sh > /dev/null 2>&1
+	sudo -n -u loxberry $LBPBIN/$PLUGINNAME/hm2mqtt.sh > /dev/null 2>&1
 	STEPS=150
 	for i in $(seq 1 ${STEPS}); do
 		sleep 1
 		echo -n "."
 		if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
-			LOGOK "OK"
+			LOGOK "HM2MQTT started successfully"
 			HM2MQTTPID=$(pgrep -f hm2mqtt/index.js)
 			break
 		fi
 		if [[ ${i} -eq ${STEPS} ]]; then
-			LOGERR "ERROR"
+			LOGERR "ERROR starting HM2MQTT"
 			HM2MQTTPID="None"
+			break
 		fi
 	done
 fi
@@ -438,17 +439,18 @@ kill_hm
 if [[ $1 == "short" ]]; then
 	LOGINF "We are in short mode. No hardware initialisation will be done."
 	# Source HM environment
-	[[ -r REPLACELBPCONFIGDIR/hm_env ]] && . REPLACELBPCONFIGDIR/hm_env
+	[[ -r $LBPCONFIG/$PLUGINNAME/hm_env ]] && . $LBPCONFIG/$PLUGINNAME/hm_env
 else
 	LOGINF "We are in long mode. Hardware will be initialized."
 	identify_hw
 	init_hw
 	# save all HM_ env variables
-	set | grep '^HM_' > REPLACELBPCONFIGDIR/hm_env
+	set | grep '^HM_' > $LBPCONFIG/$PLUGINNAME/hm_env
 fi
 
 LOGINF "This is the HM environment:"
-cat REPLACELBPCONFIGDIR/hm_env >> ${FILENAME}
+cat $LBPCONFIG/$PLUGINNAME/hm_env >> ${FILENAME}
+cat $LBPCONFIG/$PLUGINNAME/hm_env
 
 # Start Homematic
 start_hm
@@ -463,10 +465,11 @@ LOGINF "RFD: ${RFDPID}"
 LOGINF "HMIPServer: ${HMSERVERPID}"
 LOGINF "HM2MQTT: ${HM2MQTTPID}"
 
-chown -R loxberry:loxberry REPLACELBPCONFIGDIR
+chown -R loxberry:loxberry $LBPCONFIG/$PLUGINNAME
 
 # Show some more informations if in Debug mode
 if [ $LOGLEVEL -eq 7 ]; then
+	LOGINF "We are in debug mode. So here are some more system information which may help:"
 	LOGINF "The following plugins are installed:"
 	cat $LBSDATA/plugindatabase.dat >> ${FILENAME}
 	LOGINF "The system is:"

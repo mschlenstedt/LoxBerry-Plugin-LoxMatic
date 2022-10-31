@@ -24,7 +24,7 @@
 					jQuery("#content").html(response.content);
 				}
 			}
-		}
+		};
 		new Ajax.Request(url,opt);
 	};
 	
@@ -43,12 +43,11 @@
 						alert(translateKey(response.content));
 					}
 				} else {
-					//TODO make messagebox instead of alert (Wait ) siehe Power point Seite 2
-					MessageBox.show(translateKey(response.content), '<br/><br/><img id="messageBoxWaitSearchGraph" src="/ise/img/anim_bargraph.gif"><br/>','','320','75', 'messageBoxWaitSearch', 'messageBoxWaitSearchGraph');
+					MessageBox.show(translateKey(response.content), '<br/><br/><img id="messageBoxWaitSearchGraph" src="/ise/img/anim_bargraph.gif" alt=""><br/>','','320','75', 'messageBoxWaitSearch', 'messageBoxWaitSearchGraph');
 					setTimeout(ShowAddableAccessPoint, 15000);	
 				}
 			}
-		}
+		};
 		new Ajax.Request(url,opt);
 	};
   
@@ -57,7 +56,7 @@
 	  s += "<table cellspacing='8'>";
 	  s += "<tr>";
 	  s += "<td align='center' valign='middle'><div class='FooterButton' onclick='WebUI.goBack();'>"+ translateKey('footerBtnPageBack') +"</div></td>";
-	  s += "<td align='center' valign='middle'><div class='FooterButton' onclick='SearchNewAccessPoint();'>"+ translateKey('footerBtnNew') +"</div></td>";
+	  s += "<td id='btnSearchNewAccessPoint' align='center' valign='middle'><div class='FooterButton' onclick='SearchNewAccessPoint();'>"+ translateKey('footerBtnNew') +"</div></td>";
 	   
 	  s += "</tr>";
 	  s += "</table>";

@@ -54,7 +54,7 @@ echo "*************************************************************"
 echo "Download rpi-source and install..."
 echo "*************************************************************"
 echo
-wget https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source -O /usr/local/bin/rpi-source && sudo chmod +x /usr/local/bin/rpi-source 
+wget https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source -O /usr/local/bin/rpi-source && chmod +x /usr/local/bin/rpi-source 
 
 # Download Kernel sources
 echo
@@ -63,7 +63,7 @@ echo "Download Kernel sources..."
 echo "*************************************************************"
 echo
 rm $CURRDIR/rpi-source.log
-/usr/local/bin/rpi-source --skip-update -v -d /usr/src --nomake --delete 2>&1 | tee -a $CURRDIR/rpi-source.log
+/usr/local/bin/rpi-source --skip-update -v -d /usr/src --default-config --nomake --delete 2>&1 | tee -a $CURRDIR/rpi-source.log
 
 SRCCOMMIT=$(cat $CURRDIR/rpi-source.log | grep 'Linux source commit' | sed 's/.*Linux source commit: //')
 
@@ -71,32 +71,37 @@ wget https://raw.githubusercontent.com/Hexxeh/rpi-firmware/$FIRMWAREREV/Module7.
 wget https://raw.githubusercontent.com/Hexxeh/rpi-firmware/$FIRMWAREREV/Module7l.symvers -O /usr/src/linux/Module7l.symvers
 wget https://raw.githubusercontent.com/Hexxeh/rpi-firmware/$FIRMWAREREV/Module.symvers -O /usr/src/linux/Modulepi1.symvers
 
-# Prepar Kernel Pi1
+# Prepare Kernel
 echo
 echo "*************************************************************"
-echo "Prepare Kernel for Pi1..."
+echo "Prepare Kernel..."
 echo "*************************************************************"
 echo
 cd /usr/src/linux
 make clean
-#modprobe configs
-#zcat /proc/config.gz > .config
-zcat $CURRDIR/pi1_config.gz > .config
 . .config
 if [ ! $CONFIG_LOCALVERSION ]
 then
 	UNAME="$KERNEL+"
+	SYMVER=""
 else
 	UNAME="$KERNEL$CONFIG_LOCALVERSION+"
+	if [ $CONFIG_LOCALVERSION -eq "-v7" ]
+	then
+		SYMVER="7"
+	else
+		SYMVER="71"
+	fi
 fi
 mkdir -p $CURRDIR/../$UNAME
-cp /usr/src/linux/Modulepi1.symvers /usr/src/linux/Module.symvers
+
+cp /usr/src/linux/Module$SYMVER.symvers /usr/src/linux/Module.symvers
 yes \n | make modules_prepare
 
-# Compile modules for Pi1 and integrate them into repo 
+# Compile modules and integrate them into repo 
 echo
 echo "*************************************************************"
-echo "Compile modules for Pi1..."
+echo "Compile homematic modules..."
 echo "*************************************************************"
 echo
 cd $CURRDIR/piVCCU/kernel
@@ -104,125 +109,38 @@ make clean
 make
 
 cp generic_raw_uart.ko $CURRDIR/../$UNAME/
-#cp bcm2835_raw_uart.ko $CURRDIR/../$UNAME/
 cp eq3_char_loop.ko $CURRDIR/../$UNAME/
+cp hb_rf_usb_2.ko $CURRDIR/../$UNAME/
+cp hb_rf_usb.ko $CURRDIR/../$UNAME/
+cp dummy_rx8130.ko $CURRDIR/../$UNAME/
+cp rpi_rf_mod_led.ko $CURRDIR/../$UNAME/
+cp led_trigger_timer.ko $CURRDIR/../$UNAME/
+cp rtc-rx8130.ko $CURRDIR/../$UNAME/
+cp pl011_raw_uart.ko $CURRDIR/../$UNAME/
 
 # Check modules
 echo
 echo "*************************************************************"
-echo "Check modules for Pi1..."
+echo "Check homematic modules..."
 echo "*************************************************************"
 echo
 echo "Current kernel version is: $(uname -r)"
 echo
 modinfo $CURRDIR/../$UNAME/generic_raw_uart.ko
-#modinfo $CURRDIR/../$UNAME/bcm2835_raw_uart.ko
-echo
-modinfo $CURRDIR/../$UNAME/eq3_char_loop.ko
 
-# Prepar Kernel Pi2/3
+# Prepare Overlay
 echo
 echo "*************************************************************"
-echo "Prepare Kernel for Pi2/31..."
+echo "Prepare Overlay..."
 echo "*************************************************************"
 echo
-cd /usr/src/linux
-make clean
-#modprobe configs
-#zcat /proc/config.gz > .config
-zcat $CURRDIR/pi2_config.gz > .config
-. .config
-if [ ! $CONFIG_LOCALVERSION ]
-then
-	UNAME="$KERNEL+"
-else
-	UNAME="$KERNEL$CONFIG_LOCALVERSION+"
-fi
-mkdir -p $CURRDIR/../$UNAME
-cp /usr/src/linux/Module7.symvers /usr/src/linux/Module.symvers
-yes \n | make modules_prepare
-
-# Compile modules for Pi2/3 and integrate them into repo 
-echo
-echo "*************************************************************"
-echo "Compile modules for Pi2/3..."
-echo "*************************************************************"
-echo
-cd $CURRDIR/piVCCU/kernel
-make clean
-make
-
-cp generic_raw_uart.ko $CURRDIR/../$UNAME/
-#cp bcm2835_raw_uart.ko $CURRDIR/../$UNAME/
-cp eq3_char_loop.ko $CURRDIR/../$UNAME/
-
-# Check modules
-echo
-echo "*************************************************************"
-echo "Check modules for Pi2/3..."
-echo "*************************************************************"
-echo
-echo "Current kernel version is: $(uname -r)"
-echo
-modinfo $CURRDIR/../$UNAME/generic_raw_uart.ko
-#modinfo $CURRDIR/../$UNAME/bcm2835_raw_uart.ko
-echo
-modinfo $CURRDIR/../$UNAME/eq3_char_loop.ko
-
-# Prepar Kernel Pi4
-echo
-echo "*************************************************************"
-echo "Prepare Kernel for Pi4..."
-echo "*************************************************************"
-echo
-cd /usr/src/linux
-make clean
-#modprobe configs
-#zcat /proc/config.gz > .config
-zcat $CURRDIR/pi4_config.gz > .config
-. .config
-if [ ! $CONFIG_LOCALVERSION ]
-then
-	UNAME="$KERNEL+"
-else
-	UNAME="$KERNEL$CONFIG_LOCALVERSION+"
-fi
-mkdir -p $CURRDIR/../$UNAME
-cp /usr/src/linux/Module7l.symvers /usr/src/linux/Module.symvers
-yes \n | make modules_prepare
-
-# Compile modules for Pi1 and integrate them into repo 
-echo
-echo "*************************************************************"
-echo "Compile modules for Pi4..."
-echo "*************************************************************"
-echo
-cd $CURRDIR/piVCCU/kernel
-make clean
-make
-
-cp generic_raw_uart.ko $CURRDIR/../$UNAME/
-#cp bcm2835_raw_uart.ko $CURRDIR/../$UNAME/
-cp eq3_char_loop.ko $CURRDIR/../$UNAME/
-
-# Check modules
-echo
-echo "*************************************************************"
-echo "Check modules for Pi4..."
-echo "*************************************************************"
-echo
-echo "Current kernel version is: $(uname -r)"
-echo
-modinfo $CURRDIR/../$UNAME/generic_raw_uart.ko
-#modinfo $CURRDIR/../$UNAME/bcm2835_raw_uart.ko
-echo
-modinfo $CURRDIR/../$UNAME/eq3_char_loop.ko
-
-
-
+cd $CURRDIR
+wget https://raw.githubusercontent.com/alexreinert/piVCCU/master/dts/pivccu-raspberrypi.dts
+dtc -@ -I dts -O dtb -W no-unit_address_vs_reg -o /$CURRDIR/../pivccu-raspberrypi.dtbo pivccu-raspberrypi.dts
 
 echo
-echo "Finished."
+echo "Finished. Maybe you also want to update detect_radio_module?"
+echo "https://github.com/alexreinert/piVCCU/tree/master/detect_radio_module"
 
 echo
 echo "*************************************************************"

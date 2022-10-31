@@ -8,9 +8,9 @@ if [ "$UID" -ne 0 ]; then
 fi
 
 # Source HM environment
-[[ -r REPLACELBPCONFIGDIR/hm_env ]] && . REPLACELBPCONFIGDIR/hm_env
+[[ -r $LBPCONFIG/$PLUGINNAME/hm_env ]] && . $LBPCONFIG/$PLUGINNAME/hm_env
 
-export HM_HOME=REPLACELBPDATADIR/occu/arm-gnueabihf/packages-eQ-3/RFD
+export HM_HOME=$LBPDATA/$PLUGINNAME/occu/arm-gnueabihf/packages-eQ-3/RFD
 export LD_LIBRARY_PATH=$HM_HOME/lib
 
 # Kill existing multimacd
@@ -24,11 +24,11 @@ fi
 . $LBHOMEDIR/libs/bashlib/loxberry_log.sh
 PACKAGE=$PLUGINNAME
 NAME=multimacd
-FILENAME=REPLACELBPLOGDIR/multimacd.log
+FILENAME=$LBPLOG/$PLUGINNAME/multimacd.log
 APPEND=1
 LOGSTART "multimac daemon started."
 LOGOK "multimac daemon started."
-cat REPLACELBPCONFIGDIR/hm_env >> REPLACELBPLOGDIR/multimacd.log
+cat $LBPCONFIG/$PLUGINNAME/hm_env >> $LBPLOG/$PLUGINNAME/multimacd.log
 # skip this startup if not in normal mode
 if [[ "${HM_MODE}" != "NORMAL" ]]; then
 	LOGERR "HM environment was not started successfully"
@@ -38,7 +38,7 @@ fi
 LOGEND
 
 # Loglevel
-DEBUG=$(jq -r '.Debug' REPLACELBPCONFIGDIR/loxmatic.json)
+DEBUG=$(jq -r '.Debug' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
 if [ "$DEBUG" = "true" ] || [ "$DEBUG" = "1" ]; then
 	LEVEL="0"
 else
@@ -46,7 +46,7 @@ else
 fi
 
 # Patch config
-sed -i "s|^Coprocessor Device Path = .*$|Coprocessor Device Path = ${HM_HOST_GPIO_UART}|" REPLACELBPCONFIGDIR/multimacd.conf
+sed -i "s|^Coprocessor Device Path = .*$|Coprocessor Device Path = ${HM_HOST_GPIO_UART}|" $LBPCONFIG/$PLUGINNAME/multimacd.conf
 
 # Start multimacd
-$HM_HOME/bin/multimacd -d -l $LEVEL -f REPLACELBPCONFIGDIR/multimacd.conf > /dev/null 2>&1
+$HM_HOME/bin/multimacd -d -l $LEVEL -f $LBPCONFIG/$PLUGINNAME/multimacd.conf > /dev/null 2>&1

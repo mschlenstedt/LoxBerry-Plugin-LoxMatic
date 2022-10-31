@@ -1,5 +1,5 @@
 /*-----------------------------------------------------------------------------
- * Copyright (c) 2018 by Alexander Reinert
+ * Copyright (c) 2020 by Alexander Reinert
  * Author: Alexander Reinert
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,8 +18,10 @@
  *---------------------------------------------------------------------------*/
 
 #include <linux/kernel.h> /*needed for priority messages in prink*/
-#include <linux/init.h> /*needed for macros*/
+#include <linux/init.h>   /*needed for macros*/
 #include <linux/module.h> /*needed for all modules*/
+
+#include "stack_protector.include"
 
 static char *board_serial = "";
 static char *radio_mac = "";
@@ -50,7 +52,7 @@ MODULE_PARM_DESC(hmip_minor, "Device minor number of HmIP device");
 static int __init plat_eq3ccu2_init(void)
 {
   printk(KERN_INFO "Started plat_eq3ccu2\n");
-    return 0;
+  return 0;
 }
 
 static void __exit plat_eq3ccu2_exit(void)
@@ -62,7 +64,6 @@ module_init(plat_eq3ccu2_init);
 module_exit(plat_eq3ccu2_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_VERSION("1.2");
+MODULE_VERSION("1.4");
 MODULE_AUTHOR("Alexander Reinert <alex@areinert.de>");
 MODULE_DESCRIPTION("plat_eq3ccu2 CCU2 emulation module");
-

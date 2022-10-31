@@ -1,0 +1,14 @@
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/eq3_char_loop.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/plat_eq3ccu2.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/generic_raw_uart.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/pl011_raw_uart.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/dw_apb_raw_uart.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/meson_raw_uart.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/fake_hmrf.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/rpi_rf_mod_led.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/dummy_rx8130.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/led_trigger_timer.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/hb_rf_usb.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/hb_rf_usb_2.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/hb_rf_eth.ko
+kernel//opt/loxberry/data/plugins/loxmatic/kernel/src/piVCCU/kernel/rtc-rx8130.ko

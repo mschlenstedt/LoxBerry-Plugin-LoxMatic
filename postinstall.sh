@@ -25,7 +25,4 @@ cd $PDATA
 tar xvfz hm2mqtt.tar.gz
 rm hm2mqtt.tar.gz
 
-echo "<INFO> Do firmware upgrade on next reboot"
-touch $PCONFIG/do_firmwareupgrade
-
 exit 0
