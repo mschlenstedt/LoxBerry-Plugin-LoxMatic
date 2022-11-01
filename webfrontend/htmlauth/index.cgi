@@ -25,7 +25,7 @@ use warnings;
 use strict;
 
 # Version of this script
-my $version = "0.1.1.0";
+my $version = "1.0.0";
 
 # CGI
 my $cgi = CGI->new;
@@ -52,6 +52,12 @@ if( $q->{ajax} ) {
 
 	if( $q->{ajax} eq "cleannamesfile" ) {
 		cleannamesfile();
+		$response{response} = "OK";
+		print JSON::encode_json(\%response);
+	}
+
+	if( $q->{ajax} eq "restartservices" ) {
+		restartservices();
 		$response{response} = "OK";
 		print JSON::encode_json(\%response);
 	}
@@ -88,15 +94,20 @@ if( !$q->{form} or $q->{form} eq "settings" ) {
 	$template->param("FORM_SETTINGS", 1);
 	settings_form();
 }
-elsif ( $q->{form} eq "sniffer" ) {
-	$navbar{20}{active} = 1;
-	$template->param("FORM_SNIFFER", 1);
-	#sniffer_form();
-}
-elsif ( $q->{form} eq "firmware" ) {
-	$navbar{30}{active} = 1;
-	$template->param("FORM_FIRMWARE", 1);
-	#firmware_form();
+#elsif ( $q->{form} eq "sniffer" ) {
+#	$navbar{20}{active} = 1;
+#	$template->param("FORM_SNIFFER", 1);
+#	#sniffer_form();
+#}
+#elsif ( $q->{form} eq "firmware" ) {
+#	$navbar{30}{active} = 1;
+#	$template->param("FORM_FIRMWARE", 1);
+#	#firmware_form();
+#}
+elsif ( $q->{form} eq "logfiles" ) {
+	$navbar{90}{active} = 1;
+	$template->param("FORM_LOGFILES", 1);
+	logfiles_form();
 }
 
 print_form();
@@ -109,53 +120,22 @@ exit;
 sub print_form
 {
         my $plugintitle = "LoxMatic v" . LoxBerry::System::pluginversion();
-	my $helplink = "https://www.loxwiki.eu/x/1IaxAg";
+	my $helplink = "https://wiki.loxberry.de/plugins/loxmatic/start";
 	my $helptemplate = "help.html";
-
-	# Check for some common problems...
-	my $output = "";
-	$output = qx(grep -E "console=(serial0|ttyAMA0|ttyS0)" /boot/cmdline.txt);
-	if ($output) {
-		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_SERIALCONSOLEENABLED'}, "error");
-	}
-	$output = qx(grep -E "^enable_uart=1" /boot/config.txt);
-	if (!$output) {
-		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_UARTDISABLED'}, "error");
-	}
-	$output = qx(grep -E "^core_freq=" /boot/config.txt);
-	if ($output) {
-		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_COREFREQ'}, "error");
-	}
-	$output = qx(grep -E "^init_uart_clock" /boot/config.txt);
-	if ($output) {
-		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_INITUARTCLOCK'}, "error");
-	}
-	$output = qx(grep -E "^dtoverlay=pi3-disable-bt" /boot/config.txt);
-	if (!$output) {
-		$output = qx(grep -E "^dtoverlay=pi3-miniuart-bt" /boot/config.txt);
-		if (!$output) {
-			notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_P3BLUETOOTH'}, "error");
-		}
-	}
-	$output = qx(grep -E "^dtparam=i2c_arm=on" /boot/config.txt);
-	if (!$output) {
-		notify( $lbpplugindir, "webif", $SL{'SETTINGS.MSG_I2CENABLED'}, "error");
-	}
 
 	# Navbar
         $navbar{10}{Name} = $SL{'SETTINGS.LABEL_NAV_SETTINGS'};
         $navbar{10}{URL} = 'index.cgi';
         $navbar{10}{Notify_Package} = $lbpplugindir;
 
-        $navbar{20}{Name} = $SL{'SETTINGS.LABEL_NAV_SNIFFER'};
-        $navbar{20}{URL} = 'index.cgi?form=sniffer';
+	#$navbar{20}{Name} = $SL{'SETTINGS.LABEL_NAV_SNIFFER'};
+	#$navbar{20}{URL} = 'index.cgi?form=sniffer';
 
-        $navbar{30}{Name} = $SL{'SETTINGS.LABEL_NAV_FIRMWARE'};
-        $navbar{30}{URL} = 'index.cgi?form=firmware';
+	#$navbar{30}{Name} = $SL{'SETTINGS.LABEL_NAV_FIRMWARE'};
+	#$navbar{30}{URL} = 'index.cgi?form=firmware';
 
         $navbar{90}{Name} = $SL{'SETTINGS.LABEL_NAV_LOGFILES'};
-	$navbar{90}{URL} =  LoxBerry::Web::loglist_url();
-	#$navbar{90}{target} = '_blank';
+	$navbar{90}{URL} =  'index.cgi?form=logfiles';
 
 	# Template
         LoxBerry::Web::lbheader($plugintitle, $helplink, $helptemplate);
@@ -247,13 +227,14 @@ sub settings_form
 		$cfg->{EnableHM2MQTT} = $q->{EnableHM2MQTT};
 		$cfg->{EnableRFD} = $q->{EnableRFD};
 		$cfg->{EnableHMIPSERVER} = $q->{EnableHMIPSERVER};
+		$cfg->{EnableLEDS} = $q->{EnableLEDS};
 		$cfg->{HM2MQTTPort} = $q->{HM2MQTTPort};
 		$cfg->{HM2MQTTPortHmIp} = $q->{HM2MQTTPortHmIp};
 		$cfg->{HM2MQTTPrefix} = $q->{HM2MQTTPrefix};
 		$jsonobj->write();
 
 		# Kill / Restart
-		system ("sudo $lbhomedir/system/daemons/plugins/$lbpplugindir short >/dev/null 2>&1");
+		system ("sudo $lbhomedir/system/daemons/plugins/$lbpplugindir short >/dev/null 2>&1 &");
 
 	}
 
@@ -269,6 +250,17 @@ sub settings_form
 
 }
 
+########################################################################
+# Logfiles Form
+########################################################################
+sub logfiles_form
+{
+
+	my $html = loglist_html ( PACKAGE => 'loxmatic' );	
+	$template->param('LOGFILES', $html);
+
+}
+
 ######################################################################
 # AJAX functions
 ######################################################################
@@ -278,6 +270,11 @@ sub pids
 	$pids{'rfd'} = trim(`pgrep -f rfd`) ;
 	$pids{'hm2mqtt'} = trim(`pgrep -f hm2mqtt/index.js`) ;
 	$pids{'hmserver'} = trim(`pgrep -f HMIPServer.jar`) ;
+}	
+
+sub restartservices
+{
+		system ("sudo $lbhomedir/system/daemons/plugins/$lbpplugindir short >/dev/null 2>&1 &");
 }	
 
 sub cleannamesfile

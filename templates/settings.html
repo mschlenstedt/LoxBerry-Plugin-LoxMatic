@@ -34,6 +34,8 @@
 	<div style="display:flex;align-items:center;justify-content:center;width:100%">
 		<center>
 		<span id="rfdstate"></span>&nbsp;|&nbsp;<span id="hmserverstate"></span>&nbsp;|&nbsp;<span id="hm2mqttstate"></span>
+		&nbsp;&nbsp;&nbsp;&nbsp;<a href="#" onclick="return restartservices();" class="ui-btn ui-btn-inline ui-mini ui-icon-refresh ui-corner-all"><TMPL_VAR SETTINGS.BUTTON_RESTART></a>
+		<br><font size="-2"><TMPL_VAR SETTINGS.HINT_RESTART></font>
 		</center>
 	</div>
 </center>
@@ -126,7 +128,7 @@
 	<DIV	class="lb_flex-item">
 		<table>
 			<tr>
-				<td width="100%"><TMPL_VAR SETTINGS.LABEL_CURRENTNAMESFILE>&nbsp;<span id="currentnamesfile">
+				<td width="100%"><b><TMPL_VAR SETTINGS.LABEL_CURRENTNAMESFILE></b>&nbsp;<span id="currentnamesfile">
 					<TMPL_VAR CURRENTNAMESFILE></span></td>
 				<td><a href="#" onclick="return clean_namesfile();" class="ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all">No text</a></td>
 			</tr>
@@ -137,6 +139,22 @@
 	</DIV>
 	<DIV	class="lb_flex-item-spacer"></DIV>
 </DIV>
+
+<DIV	class="lb_flex-container settings">
+	<DIV	class="lb_flex-item-label">
+		<LABEL	class=	"control-label" ><TMPL_VAR SETTINGS.LABEL_ENABLELEDS></LABEL>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item">
+		<input type="checkbox" id="EnableLEDS" name="EnableLEDS" value="1" data-role="flipswitch">
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+	<DIV	class="lb_flex-item-help">
+		<TMPL_VAR SETTINGS.HINT_ENABLELEDS>
+	</DIV>
+	<DIV	class="lb_flex-item-spacer"></DIV>
+</DIV>
+
 
 <DIV	class="lb_flex-container settings">
 	<DIV	class="lb_flex-item-label">
@@ -239,6 +257,9 @@ var cfg;
 $(function() {
 	
 	// PIDs
+	$("#rfdstate").attr("style", "color:blue").html("<TMPL_VAR SETTINGS.MSG_UPDATE_PID>");
+	$("#hm2mqttstate").attr("style", "color:blue").html("<TMPL_VAR SETTINGS.MSG_UPDATE_PID>");
+	$("#hmserverstate").attr("style", "color:blue").html("<TMPL_VAR SETTINGS.MSG_UPDATE_PID>");
 	setInterval(function(){ update_pids(); }, 5000);
 	update_pids();
 	update_cfg();
@@ -307,13 +328,35 @@ function update_pids()
 		
 	})
 	.fail(function(resp) {
+		console.log( "ajax_post", "failed", resp );
 		$("#rfdstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_FAILED_PID>");
 		$("#hm2mqttstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_FAILED_PID>");
 		$("#hmserverstate").attr("style", "color:red").html("<TMPL_VAR SETTINGS.MSG_FAILED_PID>");
 	})
 	.always(function(resp) {
 		console.log( "ajax_post", "finished", resp );
+	});
 
+}
+
+function restartservices() 
+{
+
+	$("#rfdstate").attr("style", "color:blue").html("<TMPL_VAR SETTINGS.MSG_UPDATE_PID>");
+	$("#hm2mqttstate").attr("style", "color:blue").html("<TMPL_VAR SETTINGS.MSG_UPDATE_PID>");
+	$("#hmserverstate").attr("style", "color:blue").html("<TMPL_VAR SETTINGS.MSG_UPDATE_PID>");
+
+	$.post( 'index.cgi', {
+		ajax: 'restartservices'
+	})
+	.done(function(resp) {
+		console.log( "ajax_post", "success", resp );
+	})
+	.fail(function(resp) {
+		console.log( "ajax_post", "failed", resp );
+	})
+	.always(function(resp) {
+		console.log( "ajax_post", "finished", resp );
 	});
 
 }
@@ -338,7 +381,7 @@ function clean_namesfile()
 	  })
 	.always(function(resp) {
 		console.log( "ajax_post", "finished", resp );
-
+		update_pids();
 	});
 
 }
@@ -362,5 +405,12 @@ function clean_namesfile()
 <TMPL_IF FORM_FIRMWARE>
 
 <TMPL_VAR SETTINGS.HINT_LATER>
+
+</TMPL_IF>
+
+<!-- ********************* FORM_LOGFILES ******************** -->
+<TMPL_IF FORM_LOGFILES>
+
+<TMPL_VAR LOGFILES>
 
 </TMPL_IF>

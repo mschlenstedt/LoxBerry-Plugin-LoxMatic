@@ -63,6 +63,14 @@ if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
         pkill -9 -f hm2mqtt/index.js
 fi
 
+# Killing loxmatic led daemon
+LOGINF "Killing any running LOXMATICLEDD instance..."
+if pgrep -f loxmaticledd.sh > /dev/null 2>&1 ; then
+        pkill -f loxmaticledd.sh
+        sleep 0.1
+        pkill -9 -f loxmaticledd.sh
+fi
+
 }
 
 
@@ -268,9 +276,6 @@ fi
 echo oneshot > /sys/class/leds/rpi_rf_mod:green/trigger
 echo oneshot > /sys/class/leds/rpi_rf_mod:red/trigger
 echo oneshot > /sys/class/leds/rpi_rf_mod:blue/trigger
-#echo 0 > /sys/class/leds/rpi_rf_mod:green/brightness
-#echo 0 > /sys/class/leds/rpi_rf_mod:red/brightness
-#echo 0 > /sys/class/leds/rpi_rf_mod:blue/brightness
 
 #set | grep '^HM_' > $LBPCONFIG/$PLUGINNAME/hm_env
 
@@ -356,6 +361,13 @@ function start_hm()
 RFDENABLED=$(jq -r '.EnableRFD' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
 HMIPSERVERENABLED=$(jq -r '.EnableHMIPSERVER' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
 HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
+LEDSENABLED=$(jq -r '.EnableLEDS' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
+
+# Should LOXMATICLEDD be started
+if [[ "$LEDSENABLED" = "true" ]] || [[ "$LEDSENABLED" = "1" ]];  then
+	LOGINF "Starting LOXMATICLEDD..."
+	$LBPBIN/$PLUGINNAME/loxmaticledd.sh > /dev/null 2>&1 &
+fi
 
 # Should multimacd be started: Needed if RFD or HMIPServer should be started
 if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
@@ -471,6 +483,39 @@ cat $LBPCONFIG/$PLUGINNAME/hm_env
 # Start Homematic
 start_hm
 
+# Check for some common problems...
+LOGINF "Chwcking for some configuration problems..."
+if grep -q -E "console=(serial0|ttyAMA0|ttyS0)" /boot/cmdline.txt; then
+	notify $PLUGINNAME daemon "The serial console seems to be enabled. Please deactive it in LoxBerry Services." err > /dev/null 2>&1
+	LOGERR "The serial console seems to be enabled. Please deactive it in LoxBerry Services."
+fi
+if ! grep -q -E "^enable_uart=1" /boot/config.txt; then
+	notify $PLUGINNAME daemon "The UART Interface seems to be disabled. Please activate it in LoxBerry Services Widget." err > /dev/null 2>&1
+	LOGERR "The UART Interface seems to be disabled. Please activate it in LoxBerry Services Widget."
+fi
+if grep -q -E "^core_freq=" /boot/config.txt; then
+	notify $PLUGINNAME daemon "The core-freq option seems to be set. This can cause problems." err > /dev/null 2>&1
+	LOGERR "The core-freq option seems to be set. This can cause problems."
+fi
+if grep -q -E "^init_uart_clock" /boot/config.txt; then
+	notify $PLUGINNAME daemon "The init_uart_clock option seems to be set. This can cause problems." err > /dev/null 2>&1
+	LOGERR "The init_uart_clock option seems to be set. This can cause problems."
+fi
+if ! grep -q -E "^dtoverlay=pi3-disable-bt" /boot/config.txt; then
+	if ! grep -q -E "^dtoverlay=pi3-miniuart-bt" /boot/config.txt; then
+		notify $PLUGINNAME daemon "The P3 Bluetooth Interface seems not to be moved to the Miniuart Interface nor seems to be disabled. This can cause problems." err > /dev/null 2>&1
+		LOGERR "The P3 Bluetooth Interface seems not to be moved to the Miniuart Interface nor seems to be disabled. This can cause problems."
+	fi
+fi
+if ! grep -q -E "^dtparam=i2c_arm=on" /boot/config.txt; then
+	notify $PLUGINNAME daemon "The I2C Interface seems not to be activated. This can cause problems." err > /dev/null 2>&1
+	LOGERR "The I2C Interface seems not to be activated. This can cause problems."
+fi
+if ! grep -q -E "^dtoverlay=pivccu-raspberrypi" /boot/config.txt; then
+	notify $PLUGINNAME daemon "The dtoverlay for the kernel drivers seems not to be activated. This can cause problems." err > /dev/null 2>&1
+	LOGERR "The dtoverlay for the kernel drivers seems not to be activated. This can cause problems."
+fi
+
 # output some status information
 [[ ! -n "${HM_HMRF_DEV}" ]] && HM_HMRF_DEV="None"
 [[ ! -n "${HM_HMIP_DEV}" ]] && HM_HMIP_DEV="None"
@@ -498,6 +543,7 @@ if [ $LOGLEVEL -eq 7 ]; then
 	cat /boot/cmdline.txt >> ${FILENAME}
 fi
 
+# End
 LOGEND "Exit."
 
 exit 0
