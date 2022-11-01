@@ -11,19 +11,21 @@ fi
 function cleanup {
 	LOGEND
 	# Turn off all leds
-	echo oneshot > /sys/class/leds/rpi_rf_mod:green/trigger
-	echo oneshot > /sys/class/leds/rpi_rf_mod:red/trigger
-	echo oneshot > /sys/class/leds/rpi_rf_mod:blue/trigger
+	if [ ! -e /sys/class/leds/rpi_rf_mod:green/trigger ]; then
+		echo oneshot > /sys/class/leds/rpi_rf_mod:green/trigger
+		echo oneshot > /sys/class/leds/rpi_rf_mod:red/trigger
+		echo oneshot > /sys/class/leds/rpi_rf_mod:blue/trigger
+	fi
 }
 trap cleanup EXIT
 
 # Create a new entry for the logfile (for logmanager)
 . $LBHOMEDIR/libs/bashlib/loxberry_log.sh
 PACKAGE=$PLUGINNAME
-NAME=loxmaticledd
+NAME=watchdog
 LOGDIR=$LBPLOG/$PLUGINNAME
-LOGSTART "LOXMATICLEDD daemon started."
-LOGOK "LOXMATICLEDD daemon started."
+LOGSTART "WATCHDOG daemon started."
+LOGOK "WATCHDOG daemon started."
 
 RFDENABLED=$(jq -r '.EnableRFD' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
 HMIPSERVERENABLED=$(jq -r '.EnableHMIPSERVER' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
@@ -32,15 +34,17 @@ LEDSENABLED=$(jq -r '.EnableLEDS' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
 
 COUNTER=0
 ERROR=0
+SENDERR=0
+SENDOK=0
+LEDS=1
 
 if [[ "$LEDSENABLED" = "false" ]] || [[ "$LEDSENABLED" = "0" ]] || [[ -z "$LEDSENABLED" ]] || [[ "$LEDSENABLED" = "null" ]];  then
-	LOGINF "LOXMATICLEDD is disabled."
-	exit
+	LOGINF "LEDs are disabled."
+	LEDS=0
 fi
 
 if [ ! -e /sys/class/leds/rpi_rf_mod:green/trigger ]; then
-	LOGERR "Either the led kernel driver isn't loaded or your module is not supported."
-	exit
+	LOGINF "Either the led kernel driver isn't loaded or your module is not supported."
 fi
 
 while true
@@ -49,34 +53,64 @@ do
 	if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 		if ! pgrep -f bin/multimacd > /dev/null 2>&1 ; then
 			ERROR=1
+			SENDOK=0
+			if [ "$SENDERR" -eq "0" ]
+				LOGERR "MULTIMACD is not running."
+			fi
 		fi
 	fi
 
 	if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]];  then
 		if ! pgrep -f bin/rfd > /dev/null 2>&1 ; then
-			LOGERR "RFD is not running."
 			ERROR=1
+			SENDOK=0
+			if [ "$SENDERR" -eq "0" ]
+				LOGERR "RFD is not running."
+			fi
 		fi
 	fi
 	if [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 		if ! pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
 			ERROR=1
+			SENDOK=0
+			if [ "$SENDERR" -eq "0" ]
+				LOGERR "HMIPServer is not running."
+			fi
 		fi
 	fi
 	if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 		if ! pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
 			ERROR=1
+			SENDOK=0
+			if [ "$SENDERR" -eq "0" ]
+				LOGERR "HM2MQTT is not running."
+			fi
 		fi
 	fi
 
 	if [ "$ERROR" -gt "0" ]
 	then
-		echo heartbeat > /sys/class/leds/rpi_rf_mod:red/trigger
+		if [ "$LEDS" -eq "1" ]; then
+			echo heartbeat > /sys/class/leds/rpi_rf_mod:red/trigger
+		fi
+		SENDERR=1
+		if [ "$COUNTER" -gt "300" ]; then
+			LOGERR "Due to previous errors try to restart services."
+			sudo $LBHOME/system/daemons/plugins/$PLUGINNAME short >/dev/null 2>&1 &
+			COUNTER=0
+		fi
 	else
 		echo oneshot > /sys/class/leds/rpi_rf_mod:red/trigger
+		SENDERR=0
+		if [ "$SENDOK" -eq "0" ]
+			LOGOK "All services are running (again)."
+			SENDOK=1
+		fi
 		if [ "$COUNTER" -gt "29" ]; then
-			echo oneshot > /sys/class/leds/rpi_rf_mod:green/trigger
-			echo 1 > /sys/class/leds/rpi_rf_mod:green/shot
+			if [ "$LEDS" -eq "1" ]; then
+				echo oneshot > /sys/class/leds/rpi_rf_mod:green/trigger
+				echo 1 > /sys/class/leds/rpi_rf_mod:green/shot
+			fi
 			COUNTER=0
 		fi
 	fi

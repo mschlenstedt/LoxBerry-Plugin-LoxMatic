@@ -63,12 +63,12 @@ if pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
         pkill -9 -f hm2mqtt/index.js
 fi
 
-# Killing loxmatic led daemon
-LOGINF "Killing any running LOXMATICLEDD instance..."
-if pgrep -f loxmaticledd.sh > /dev/null 2>&1 ; then
-        pkill -f loxmaticledd.sh
+# Killing loxmatic watchdog
+LOGINF "Killing any running LOXMATIC WAtCHDOG instance..."
+if pgrep -f loxmatic_watchdog.sh > /dev/null 2>&1 ; then
+        pkill -f loxmatic_watchdog.sh
         sleep 0.1
-        pkill -9 -f loxmaticledd.sh
+        pkill -9 -f loxmatic_watchdog.sh
 fi
 
 }
@@ -363,12 +363,6 @@ HMIPSERVERENABLED=$(jq -r '.EnableHMIPSERVER' $LBPCONFIG/$PLUGINNAME/loxmatic.js
 HM2MQTTENABLED=$(jq -r '.EnableHM2MQTT' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
 LEDSENABLED=$(jq -r '.EnableLEDS' $LBPCONFIG/$PLUGINNAME/loxmatic.json)
 
-# Should LOXMATICLEDD be started
-if [[ "$LEDSENABLED" = "true" ]] || [[ "$LEDSENABLED" = "1" ]];  then
-	LOGINF "Starting LOXMATICLEDD..."
-	$LBPBIN/$PLUGINNAME/loxmaticledd.sh > /dev/null 2>&1 &
-fi
-
 # Should multimacd be started: Needed if RFD or HMIPServer should be started
 if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 	LOGINF "Starting MULTIMACD..."
@@ -454,6 +448,9 @@ if [[ "$HM2MQTTENABLED" = "true" ]] || [[ "$HM2MQTTENABLED" = "1" ]];  then
 		fi
 	done
 fi
+
+# Start watchdog
+$LBPBIN/$PLUGINNAME/loxmatic_watchdog.sh > /dev/null 2>&1 &
 
 }
 
