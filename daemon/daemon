@@ -118,11 +118,11 @@ for syspath in $(find /sys/bus/usb/devices/); do
   case "$USBID" in
     "0403:6f70")
       KMOD="hb_rf_usb"
-      LOGINF "Found hb_rf_usb Module."
+      LOGINF "Found HB-RF-USB Adapter."
       ;;
     "10c4:8c07" | "1b1f:c020")
       KMOD="hb_rf_usb_2"
-      LOGINF "Found hb_rf_usb_2 Module."
+      LOGINF "Found HB-RF-USB-2 Adapter."
       ;;
     *)
       continue
@@ -169,6 +169,8 @@ do
       DEV_TYPE=`echo $MODULE_INFO | cut -d' ' -f1`
       DEV_SERIAL=`echo $MODULE_INFO | cut -d' ' -f2`
 
+      LOGOK "Found $DEV_TYPE Module with Serial $DEV_SERIAL"
+
       HM_HOST_GPIO_UART="/dev/$UART_DEV"
 
       HM_HMIP_DEV="$DEV_TYPE"
@@ -200,6 +202,12 @@ do
     fi
   fi
 done
+
+if  [ -z $DEV_TYPE ]; then
+  LOGERR "Cannot detect type of Homematic Module. The plugin will not work."
+  notify $PLUGINNAME daemon "Cannot detect type of Homematic Module. The plugin will not work." err > /dev/null 2>&1
+  HM_MODE="ERROR"
+fi
 
 for syspath in $(find /sys/bus/usb/devices/); do
   if [ -e $syspath/idVendor ] && [ "`cat $syspath/idVendor`" == "1b1f" ] && [ "`cat $syspath/idProduct`" == "c00f" ]; then
