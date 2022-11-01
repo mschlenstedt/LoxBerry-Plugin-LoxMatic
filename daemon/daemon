@@ -257,12 +257,12 @@ else
 fi
 
 # Turn off all leds
-echo none > /sys/class/leds/rpi_rf_mod:green/trigger
-echo none > /sys/class/leds/rpi_rf_mod:red/trigger
-echo none > /sys/class/leds/rpi_rf_mod:blue/trigger
-echo 0 > /sys/class/leds/rpi_rf_mod:green/brightness
-echo 0 > /sys/class/leds/rpi_rf_mod:red/brightness
-echo 0 > /sys/class/leds/rpi_rf_mod:blue/brightness
+echo oneshot > /sys/class/leds/rpi_rf_mod:green/trigger
+echo oneshot > /sys/class/leds/rpi_rf_mod:red/trigger
+echo oneshot > /sys/class/leds/rpi_rf_mod:blue/trigger
+#echo 0 > /sys/class/leds/rpi_rf_mod:green/brightness
+#echo 0 > /sys/class/leds/rpi_rf_mod:red/brightness
+#echo 0 > /sys/class/leds/rpi_rf_mod:blue/brightness
 
 #set | grep '^HM_' > $LBPCONFIG/$PLUGINNAME/hm_env
 
