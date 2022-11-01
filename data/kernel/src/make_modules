@@ -42,7 +42,7 @@ echo "Prepare folders..."
 echo "*************************************************************"
 echo
 
-#mkdir -p ./kernel_src
+mkdir -p /lib/modules/$(uname -r)
 rm /lib/modules/$(uname -r)/build
 rm /lib/modules/$(uname -r)/source
 ln -s /usr/src/linux /lib/modules/$(uname -r)/build
@@ -59,14 +59,17 @@ wget https://raw.githubusercontent.com/notro/rpi-source/master/rpi-source -O /us
 # Download Kernel sources
 echo
 echo "*************************************************************"
-echo "Download Kernel sources..."
+echo "Download Kernel Sources..."
 echo "*************************************************************"
 echo
 rm $CURRDIR/rpi-source.log
-/usr/local/bin/rpi-source --skip-update -v -d /usr/src --default-config --nomake --delete 2>&1 | tee -a $CURRDIR/rpi-source.log
+/usr/local/bin/rpi-source --skip-update -v -d /usr/src --nomake --delete 2>&1 | tee -a $CURRDIR/rpi-source.log
 
 SRCCOMMIT=$(cat $CURRDIR/rpi-source.log | grep 'Linux source commit' | sed 's/.*Linux source commit: //')
 
+rm /usr/src/linux/Module7.symvers
+rm /usr/src/linux/Module7l.symvers
+rm /usr/src/linux/Modulepi1.symvers
 wget https://raw.githubusercontent.com/Hexxeh/rpi-firmware/$FIRMWAREREV/Module7.symvers -O /usr/src/linux/Module7.symvers
 wget https://raw.githubusercontent.com/Hexxeh/rpi-firmware/$FIRMWAREREV/Module7l.symvers -O /usr/src/linux/Module7l.symvers
 wget https://raw.githubusercontent.com/Hexxeh/rpi-firmware/$FIRMWAREREV/Module.symvers -O /usr/src/linux/Modulepi1.symvers
@@ -79,6 +82,13 @@ echo "*************************************************************"
 echo
 cd /usr/src/linux
 make clean
+
+[[ "$(/opt/loxberry/bin/showpitype)" == "type_4" ]] && make bcm2711_defconfig
+[[ "$(/opt/loxberry/bin/showpitype)" == "type_3" ]] && make bcm2709_defconfig
+[[ "$(/opt/loxberry/bin/showpitype)" == "type_2" ]] && make bcm2709_defconfig
+[[ "$(/opt/loxberry/bin/showpitype)" == "type_1" ]] && make bcmrpi_defconfig
+[[ "$(/opt/loxberry/bin/showpitype)" == "type_0" ]] && make bcmrpi_defconfig
+
 . .config
 if [ ! $CONFIG_LOCALVERSION ]
 then
@@ -86,11 +96,11 @@ then
 	SYMVER=""
 else
 	UNAME="$KERNEL$CONFIG_LOCALVERSION+"
-	if [ $CONFIG_LOCALVERSION -eq "-v7" ]
+	if [ $CONFIG_LOCALVERSION == "-v7" ]
 	then
 		SYMVER="7"
 	else
-		SYMVER="71"
+		SYMVER="7l"
 	fi
 fi
 mkdir -p $CURRDIR/../$UNAME
@@ -135,12 +145,15 @@ echo "Prepare Overlay..."
 echo "*************************************************************"
 echo
 cd $CURRDIR
-wget https://raw.githubusercontent.com/alexreinert/piVCCU/master/dts/pivccu-raspberrypi.dts
-dtc -@ -I dts -O dtb -W no-unit_address_vs_reg -o /$CURRDIR/../pivccu-raspberrypi.dtbo pivccu-raspberrypi.dts
+if [ ! -e /$CURRDIR/../pivccu-raspberrypi.dtbo ]
+then
+	rm pivccu-raspberrypi.dts
+	wget https://raw.githubusercontent.com/alexreinert/piVCCU/master/dts/pivccu-raspberrypi.dts
+	dtc -@ -I dts -O dtb -W no-unit_address_vs_reg -o /$CURRDIR/../pivccu-raspberrypi.dtbo pivccu-raspberrypi.dts
+fi
 
 echo
-echo "Finished. Maybe you also want to update detect_radio_module?"
-echo "https://github.com/alexreinert/piVCCU/tree/master/detect_radio_module"
+echo "Finished."
 
 echo
 echo "*************************************************************"
@@ -148,3 +161,9 @@ echo "Reset permissions..."
 echo "*************************************************************"
 echo
 chown -R loxberry:loxberry $CURRDIR/../*
+echo
+echo
+echo "Maybe you also want to update detect_radio_module?"
+echo "https://github.com/alexreinert/piVCCU/tree/master/detect_radio_module"
+echo
+
