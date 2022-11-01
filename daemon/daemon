@@ -256,6 +256,14 @@ else
   modprobe rpi_rf_mod_led red_gpio_pin=$RED_PIN green_gpio_pin=$GREEN_PIN blue_gpio_pin=$BLUE_PIN || true
 fi
 
+# Turn off all leds
+echo none > /sys/class/leds/rpi_rf_mod:green/trigger
+echo none > /sys/class/leds/rpi_rf_mod:red/trigger
+echo none > /sys/class/leds/rpi_rf_mod:blue/trigger
+echo 0 > /sys/class/leds/rpi_rf_mod:green/brightness
+echo 0 > /sys/class/leds/rpi_rf_mod:red/brightness
+echo 0 > /sys/class/leds/rpi_rf_mod:blue/brightness
+
 #set | grep '^HM_' > $LBPCONFIG/$PLUGINNAME/hm_env
 
 }
