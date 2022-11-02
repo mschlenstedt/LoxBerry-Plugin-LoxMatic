@@ -50,11 +50,13 @@ fi
 while true
 do
 
+	#echo $COUNTER
+
 	if [[ "$RFDENABLED" = "true" ]] || [[ "$RFDENABLED" = "1" ]] || [[ "$HMIPSERVERENABLED" = "true" ]] || [[ "$HMIPSERVERENABLED" = "1" ]];  then
 		if ! pgrep -f bin/multimacd > /dev/null 2>&1 ; then
 			ERROR=1
 			SENDOK=0
-			if [ "$SENDERR" -eq "0" ]
+			if [ "$SENDERR" -eq "0" ]; then
 				LOGERR "MULTIMACD is not running."
 			fi
 		fi
@@ -64,7 +66,7 @@ do
 		if ! pgrep -f bin/rfd > /dev/null 2>&1 ; then
 			ERROR=1
 			SENDOK=0
-			if [ "$SENDERR" -eq "0" ]
+			if [ "$SENDERR" -eq "0" ]; then
 				LOGERR "RFD is not running."
 			fi
 		fi
@@ -73,7 +75,7 @@ do
 		if ! pgrep -f HMIPServer.jar > /dev/null 2>&1 ; then
 			ERROR=1
 			SENDOK=0
-			if [ "$SENDERR" -eq "0" ]
+			if [ "$SENDERR" -eq "0" ]; then
 				LOGERR "HMIPServer is not running."
 			fi
 		fi
@@ -82,7 +84,7 @@ do
 		if ! pgrep -f hm2mqtt/index.js > /dev/null 2>&1 ; then
 			ERROR=1
 			SENDOK=0
-			if [ "$SENDERR" -eq "0" ]
+			if [ "$SENDERR" -eq "0" ]; then
 				LOGERR "HM2MQTT is not running."
 			fi
 		fi
@@ -102,7 +104,7 @@ do
 	else
 		echo oneshot > /sys/class/leds/rpi_rf_mod:red/trigger
 		SENDERR=0
-		if [ "$SENDOK" -eq "0" ]
+		if [ "$SENDOK" -eq "0" ]; then
 			LOGOK "All services are running (again)."
 			SENDOK=1
 		fi
