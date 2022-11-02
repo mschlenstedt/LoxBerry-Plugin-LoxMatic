@@ -25,6 +25,7 @@ echo "<INFO> Installation as root user started."
 echo "<INFO> Preparing OCCU..."
 mkdir -v /etc/config
 rm -rv /etc/config/firmware
+rm -rv /firmware
 ln -sv $PDATA/occu/firmware /etc/config/firmware
 ln -sv $PDATA/occu/firmware /firmware
 rm -rv /etc/config/InterfacesList.xml
