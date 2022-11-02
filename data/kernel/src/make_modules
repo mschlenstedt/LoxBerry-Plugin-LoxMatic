@@ -83,11 +83,11 @@ echo
 cd /usr/src/linux
 make clean
 
-[[ "$(/opt/loxberry/bin/showpitype)" == "type_4" ]] && make bcm2711_defconfig
-[[ "$(/opt/loxberry/bin/showpitype)" == "type_3" ]] && make bcm2709_defconfig
-[[ "$(/opt/loxberry/bin/showpitype)" == "type_2" ]] && make bcm2709_defconfig
-[[ "$(/opt/loxberry/bin/showpitype)" == "type_1" ]] && make bcmrpi_defconfig
-[[ "$(/opt/loxberry/bin/showpitype)" == "type_0" ]] && make bcmrpi_defconfig
+[[ "$($LBHOME/bin/showpitype)" == "type_4" ]] && make bcm2711_defconfig
+[[ "$($LBHOME/bin/showpitype)" == "type_3" ]] && make bcm2709_defconfig
+[[ "$($LBHOME/bin/showpitype)" == "type_2" ]] && make bcm2709_defconfig
+[[ "$($LBHOME/bin/showpitype)" == "type_1" ]] && make bcmrpi_defconfig
+[[ "$($LBHOME/bin/showpitype)" == "type_0" ]] && make bcmrpi_defconfig
 
 . .config
 if [ ! $CONFIG_LOCALVERSION ]
