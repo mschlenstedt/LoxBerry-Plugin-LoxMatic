@@ -80,11 +80,11 @@ echo "*************************************************************"
 echo "Prepare Kernel..."
 echo "*************************************************************"
 echo
-[[ "$(../../../../../bin/showpitype)" == "type_4" ]] && make bcm2711_defconfig
-[[ "$(../../../../../bin/showpitype)" == "type_3" ]] && make bcm2709_defconfig
-[[ "$(../../../../../bin/showpitype)" == "type_2" ]] && make bcm2709_defconfig
-[[ "$(../../../../../bin/showpitype)" == "type_1" ]] && make bcmrpi_defconfig
-[[ "$(../../../../../bin/showpitype)" == "type_0" ]] && make bcmrpi_defconfig
+[[ "$(../../../../../bin/showpitype)" == "type_4" ]] && cd /usr/src/linux && make bcm2711_defconfig
+[[ "$(../../../../../bin/showpitype)" == "type_3" ]] && cd /usr/src/linux && make bcm2709_defconfig
+[[ "$(../../../../../bin/showpitype)" == "type_2" ]] && cd /usr/src/linux && make bcm2709_defconfig
+[[ "$(../../../../../bin/showpitype)" == "type_1" ]] && cd /usr/src/linux && make bcmrpi_defconfig
+[[ "$(../../../../../bin/showpitype)" == "type_0" ]] && cd /usr/src/linux && make bcmrpi_defconfig
 
 cd /usr/src/linux
 make clean
