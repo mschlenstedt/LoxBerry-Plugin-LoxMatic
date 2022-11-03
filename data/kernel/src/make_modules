@@ -80,14 +80,14 @@ echo "*************************************************************"
 echo "Prepare Kernel..."
 echo "*************************************************************"
 echo
-cd /usr/src/linux
-make clean
-
 [[ "$(../../../../../bin/showpitype)" == "type_4" ]] && make bcm2711_defconfig
 [[ "$(../../../../../bin/showpitype)" == "type_3" ]] && make bcm2709_defconfig
 [[ "$(../../../../../bin/showpitype)" == "type_2" ]] && make bcm2709_defconfig
 [[ "$(../../../../../bin/showpitype)" == "type_1" ]] && make bcmrpi_defconfig
 [[ "$(../../../../../bin/showpitype)" == "type_0" ]] && make bcmrpi_defconfig
+
+cd /usr/src/linux
+make clean
 
 . .config
 if [ ! $CONFIG_LOCALVERSION ]
