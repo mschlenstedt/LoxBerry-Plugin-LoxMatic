@@ -301,7 +301,7 @@ if [ "$HM_HMIP_DEV" == "HM-MOD-RPI-PCB" ]; then
   if [ -n "$NEW_VERSION" ] && [ "$NEW_VERSION" != "$HM_HMIP_VERSION" ]; then
     LOGINF "Starting Update of HM-MOD-RPI-PCB to Version $NEW_VERSION..."
 
-    $HM_BIN/eq3configcmd update-coprocessor -p $HM_HMIP_DEVNODE -t HM-MOD-UART -u -d /firmware/HM-MOD-UART
+    $HM_BIN/eq3configcmd update-coprocessor -p $HM_HMIP_DEVNODE -t HM-MOD-UART -d /firmware/HM-MOD-UART -c -u -l 0
 
     HM_HMIP_VERSION=`$HM_BIN/eq3configcmd update-coprocessor -p $HM_HMIP_DEVNODE -t HM-MOD-UART -c -v 2>&1 | grep "Version:" | cut -d' ' -f5`
 
